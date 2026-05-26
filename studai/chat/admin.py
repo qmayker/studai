@@ -3,8 +3,9 @@ from .models import Chat, Message
 
 # Register your models here.
 
-class MessageInline(admin.TabularInline):
+class MessageInline(admin.StackedInline):
     model = Message
+    classes = ["collapse"]
     extra = 0
 
 @admin.register(Chat)
