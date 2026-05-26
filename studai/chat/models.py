@@ -9,6 +9,11 @@ class Chat(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chats"
     )
     created = models.DateTimeField(auto_now_add=True)
+    name = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        ordering = ["-created"]
+        indexes = [models.Index(fields=["created"])]
 
 
 class Message(models.Model):
