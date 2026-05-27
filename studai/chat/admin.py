@@ -10,7 +10,8 @@ class MessageInline(admin.StackedInline):
 
 @admin.register(Chat)
 class ChatAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "created")
+    list_display = ("id", "user", "created", "chat_name")
     list_filter = ("created",)
     search_fields = ("user__username",)
+    readonly_fields = ("related_id", "chat_name")
     inlines = [MessageInline]

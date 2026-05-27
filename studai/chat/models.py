@@ -1,12 +1,13 @@
 from django.db import models
 from django.conf import settings
-from .fields import ChatNameField
+from .fields import RelatedIDField
 
 # Create your models here.
 
 
 class Chat(models.Model):
-    name = ChatNameField()
+    name = models.CharField(max_length=255, blank=True)
+    related_id = RelatedIDField()
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chats"
     )
@@ -20,6 +21,12 @@ class Chat(models.Model):
         from django.urls import reverse
 
         return reverse("chat:detail", kwargs={"pk": self.pk})
+
+    @property
+    def chat_name(self):
+        if self.name:
+            return self.name
+        return f"Chat {self.related_id}"
 
 
 class Message(models.Model):

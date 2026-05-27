@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views.generic import ListView, DetailView
 from .models import Chat
 
@@ -24,3 +24,9 @@ class ChatDetailView(ChatViewMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["messages"] = self.object.messages.all()
         return context
+    
+    def get_object(self, queryset=None):
+        qs = self.get_queryset()
+        pk = self.kwargs.get(self.pk_url_kwarg)
+        obj = get_object_or_404(qs, related_id=pk, user=self.request.user)
+        return obj
