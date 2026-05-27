@@ -1,4 +1,5 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.views import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
 from .models import Chat
 from .forms import TextContentForm
@@ -14,11 +15,11 @@ class ChatViewMixin:
         return qs.filter(user=self.request.user)
 
 
-class ChatListView(ChatViewMixin, ListView):
+class ChatListView(LoginRequiredMixin, ChatViewMixin, ListView):
     template_name = "chat/chat/list.html"
 
 
-class ChatDetailView(ChatViewMixin, DetailView):
+class ChatDetailView(LoginRequiredMixin, ChatViewMixin, DetailView):
     template_name = "chat/chat/detail.html"
 
     def _get_message_form(self):
