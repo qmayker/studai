@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.views import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
 from .models import Chat
 from .forms import TextContentForm
@@ -30,7 +30,7 @@ class ChatDetailView(LoginRequiredMixin, ChatViewMixin, DetailView):
         context["messages"] = self.object.messages.all()
         context["form"] = self._get_message_form()
         return context
-    
+
     def get_object(self, queryset=None):
         qs = self.get_queryset()
         pk = self.kwargs.get(self.pk_url_kwarg)
