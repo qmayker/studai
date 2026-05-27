@@ -1,5 +1,8 @@
 from django.db import models
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
+
 from .fields import RelatedIDField
 
 # Create your models here.
@@ -29,6 +32,23 @@ class Chat(models.Model):
         return f"Chat {self.related_id}"
 
 
-class Message(models.Model):
+class Content(models.Model):
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="messages")
-    content = models.TextField()
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+    )
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey("content_type", "object_id")
+
+
+class ItemBase(models.Model):
+    content = GenericRelation(Content, related_query_name="items")
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        abstract = True
+
+
+class TextItem(ItemBase):
+    text_content = models.TextField()

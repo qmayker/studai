@@ -1,12 +1,25 @@
 from django.contrib import admin
-from .models import Chat, Message
+from django.contrib.contenttypes.admin import GenericTabularInline
+from .models import Chat, Content, TextItem
 
 # Register your models here.
 
-class MessageInline(admin.StackedInline):
-    model = Message
+class ContentGenericInline(GenericTabularInline):
+    model = Content
     classes = ["collapse"]
     extra = 0
+    max_num = 1
+
+class ContentInline(admin.TabularInline):
+    model = Content
+    classes = ["collapse"]
+    extra = 0
+
+@admin.register(Content)
+class ContentAdmin(admin.ModelAdmin):
+    list_display = ("id", "chat", "content_type", "object_id")
+    list_filter = ("content_type",)
+    search_fields = ("chat__name",)
 
 @admin.register(Chat)
 class ChatAdmin(admin.ModelAdmin):
@@ -14,4 +27,11 @@ class ChatAdmin(admin.ModelAdmin):
     list_filter = ("created",)
     search_fields = ("user__username",)
     readonly_fields = ("related_id", "chat_name")
-    inlines = [MessageInline]
+    inlines = [ContentInline]
+
+@admin.register(TextItem)
+class TextAdmin(admin.ModelAdmin):
+    list_display = ("id", "created", "text_content")
+    list_filter = ("created",)
+    search_fields = ("text_content",)
+    inlines = [ContentGenericInline]

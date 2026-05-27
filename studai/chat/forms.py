@@ -1,10 +1,13 @@
 from django import forms
-from .models import Message 
+from .models import TextItem, Content
 
-class MessageForm(forms.ModelForm):
+
+class TextContentForm(forms.ModelForm):
     class Meta:
-        model = Message
-        fields = ["content"]
+        model = TextItem
+        fields = ["text_content"]
         widgets = {
-            "content": forms.Textarea(attrs={"rows": 3, "placeholder": "Type your message here..."}),
+            "text_content": forms.Textarea(
+                attrs={"rows": 3, "placeholder": "Type your message here..."}
+            ),
         }
