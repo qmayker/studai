@@ -20,7 +20,7 @@ class Chat(models.Model):
     def get_absolute_url(self):
         from django.urls import reverse
 
-        return reverse("chat:detail", kwargs={"pk": self.pk})
+        return reverse("chat:detail", kwargs={"pk": self.related_id})
 
     @property
     def chat_name(self):

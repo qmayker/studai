@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import ListView, DetailView
 from .models import Chat
+from .forms import MessageForm
 
 # Create your views here.
 
@@ -20,9 +21,13 @@ class ChatListView(ChatViewMixin, ListView):
 class ChatDetailView(ChatViewMixin, DetailView):
     template_name = "chat/chat/detail.html"
 
+    def _get_message_form(self):
+        return MessageForm()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["messages"] = self.object.messages.all()
+        context["form"] = self._get_message_form()
         return context
     
     def get_object(self, queryset=None):

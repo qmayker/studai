@@ -4,9 +4,19 @@
 
 {% block content %}
     <h2>{{object.name}}</h2>
-    
+    <div class="chat-messages">
+        <h3>Messages</h3>
     {% for message in messages %}
         <p>{{ message.content }}</p>
     {% endfor %}
+    </div>
+    <div class="chat-form">
+        <h3>Send a Message</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Send</button>
+        </form>
+    </div>
         
 {% endblock content %}

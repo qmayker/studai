@@ -11,10 +11,4 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='chat',
-            name='name',
-            field=chat.fields.ChatNameField(blank=True, default='chat', max_length=255),
-            preserve_default=False,
-        ),
     ]

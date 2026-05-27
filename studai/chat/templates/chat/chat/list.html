@@ -7,7 +7,7 @@
 <h2>Chat List</h2>
     <ul>
         {% for chat in object_list %}
-            <li><a href="{{chat.get_absolute_url}}">{{ chat.name }}</a></li>
+            <li><a href="{{chat.get_absolute_url}}">{{ chat.chat_name }}</a></li>
         {% empty %}
             <li>No chats available.</li>
         {% endfor %}
