@@ -1,5 +1,5 @@
 from django import forms
-from .models import TextItem, Content
+from .models import TextItem
 
 
 class TextContentForm(forms.ModelForm):
