@@ -9,17 +9,19 @@ from studai.celery import generate_questions
 class SaveContentApi(APIView):
     permission_classes = [IsAuthenticated]
 
+    # TODO fix id problem
     def post(self, request, format=None):
         data = request.data
         print(data)
         text_content = data.get("text_content")
-        chat_related_id = data.get("chat_related_id")
-        chat = Chat.objects.get(related_id=chat_related_id, user=request.user)
+        chat_id = data.get("chat__id")
+        chat = Chat.objects.get(pk=chat_id, user=request.user)
         with transaction.atomic():
-            text_item = TextItem.objects.create(text_content=text_content) 
+            text_item = TextItem.objects.create(text_content=text_content)
             Content.objects.create(chat=chat, content_object=text_item)
         return Response({"status": "ok"})
-    
+
+
 class GenerateQuestionsApi(APIView):
     permission_classes = [IsAuthenticated]
 

@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const url = new URL(apiUrl, window.location.origin);
     const id = document.querySelector(".chat-detail").id;
     const data = {'method':'POST', 'headers': {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}};
-    const body = {'chat_related_id': id};
+    const body = {'chat_id': id};
 
     sendButton.addEventListener('click', (e)=>{
         e.preventDefault();
