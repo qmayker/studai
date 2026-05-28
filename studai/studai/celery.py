@@ -1,16 +1,21 @@
-import os 
+import os
+import channels.layers
+from asgiref.sync import async_to_sync
 from time import sleep
 from celery import Celery
+from chat.services.socket import WebSocketServices
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'studai.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "studai.settings")
 
-app = Celery('studai')
-app.config_from_object('django.conf:settings', namespace='CELERY')
+app = Celery("studai")
+app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
+
 @app.task()
-def generate_questions(chat_related_id:int):
-    from chat.models import Chat
-    Chat.objects.get(related_id=chat_related_id)
-    sleep(5) 
-    
+def generate_questions(chat_related_id: int):
+    group_name = WebSocketServices.get_group_name(chat_related_id)
+    channel_layer = channels.layers.get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        group_name, {"type": "chat.message", "is_ready": True}
+    )

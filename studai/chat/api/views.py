@@ -14,7 +14,7 @@ class SaveContentApi(APIView):
         data = request.data
         print(data)
         text_content = data.get("text_content")
-        chat_id = data.get("chat__id")
+        chat_id = data.get("chat_id")
         chat = Chat.objects.get(pk=chat_id, user=request.user)
         with transaction.atomic():
             text_item = TextItem.objects.create(text_content=text_content)
