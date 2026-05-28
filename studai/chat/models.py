@@ -33,7 +33,7 @@ class Chat(models.Model):
 
 
 class Content(models.Model):
-    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="messages")
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="contents")
     content_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,
@@ -52,3 +52,6 @@ class ItemBase(models.Model):
 
 class TextItem(ItemBase):
     text_content = models.TextField()
+
+    def get_content(self):
+        return self.text_content

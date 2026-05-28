@@ -10,6 +10,7 @@ class SaveContentApi(APIView):
 
     def post(self, request, format=None):
         data = request.data
+        print(data)
         text_content = data.get("text_content")
         chat_related_id = data.get("chat_related_id")
         chat = Chat.objects.get(related_id=chat_related_id, user=request.user)

@@ -4,11 +4,13 @@
 {% block title %}Chat Detail{% endblock title %}
 
 {% block content %}
-    <h2>{{object.name}}</h2>
+    <div class="chat-detail" id="{{object.id}}">
+        <h2>{{object.name}}</h2>
+    </div>
     <div class="chat-messages">
         <h3>Messages</h3>
-    {% for message in messages %}
-        <p>{{ message.content }}</p>
+    {% for content in contents %}
+        <p>{{ content.content_object.get_content }}</p>
     {% endfor %}
     </div>
     <div class="chat-form">
@@ -16,7 +18,7 @@
         <form>
             {% csrf_token %}
             {{ form.as_p }}
-            <div class="send-button">
+            <div class="send-button" data-url="{% url 'chat_api:save_content' %}">
                 <button type="submit">Send</button>
             </div>
         </form>

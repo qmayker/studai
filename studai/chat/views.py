@@ -27,7 +27,7 @@ class ChatDetailView(LoginRequiredMixin, ChatViewMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["messages"] = self.object.messages.all()
+        context["contents"] = self.object.contents.all()
         context["form"] = self._get_message_form()
         return context
 
