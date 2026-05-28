@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/app/
+  celery:
+    build: .
+    command: celery -A studai worker --loglevel=info
+    volumes:
+      - .:/app/
+  redis:
+      image: "redis:alpine"
+      ports:
+        - "6379:6379"
