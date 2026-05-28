@@ -23,9 +23,19 @@
             </div>
         </form>
     </div>
+    <div class="generate-questions">
+        <h3>Generate Questions</h3>
+        <form>
+            {% csrf_token %}
+            <div class="generate-button" data-url="{% url 'chat_api:generate_questions' %}">
+                <button type="submit">Generate</button>
+            </div>
+        </form>
+    </div>
         
 {% endblock content %}
 
 {% block scripts %}
     <script src="{% static 'js/send_button.js' %}"></script>
+    <script src="{% static 'js/generate_button.js' %}"></script>
 {% endblock scripts %}
