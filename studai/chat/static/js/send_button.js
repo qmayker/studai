@@ -4,9 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const csrfToken = Cookies.get('csrftoken');
     const apiUrl = sendButton.dataset.url;
     const url = new URL(apiUrl, window.location.origin);
-    const id = document.querySelector(".chat-detail").id;
     const data = {'method':'POST', 'headers': {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}};
-    const body = {'chat_id': id};
 
     sendButton.addEventListener('click', (e)=>{
         e.preventDefault();
@@ -14,12 +12,14 @@ document.addEventListener("DOMContentLoaded", function () {
         const textContent = textArea.value;
         textArea.value = "";
 
-        const messageArea = document.querySelector(".chat-messages");
+        const messageArea = document.getElementById("materials");
         const newMessage = document.createElement("p");
-        newMessage.textContent = textContent;
-        messageArea.appendChild(newMessage);
-        body["text_content"] = textContent;
-        data.body = JSON.stringify(body);
+        console.log(messageArea.dataset.status)
+        if (messageArea.dataset.status === "shown"){
+            newMessage.textContent = textContent;
+            messageArea.appendChild(newMessage);
+        }
+        data.body = JSON.stringify({"text_content": textContent});
         fetch(url, data);
     });
 

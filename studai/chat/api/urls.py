@@ -1,9 +1,9 @@
-from django.urls import path
+from rest_framework.routers import SimpleRouter
+from .views import ChatViewSet
 
-from .views import SaveContentApi, GenerateQuestionsApi
+router = SimpleRouter()
+router.register("chat", ChatViewSet, basename="chat")
 
 app_name = "chat_api"
-urlpatterns = [
-    path("save_content/", SaveContentApi.as_view(), name="save_content"),
-    path("generate/", GenerateQuestionsApi.as_view(), name="generate_questions"),
-]
+urlpatterns = []
+urlpatterns += router.urls

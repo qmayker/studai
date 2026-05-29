@@ -41,10 +41,15 @@ class Content(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
 
+    def get_content(self):
+        return self.content_object.get_content()
+
 
 class ItemBase(models.Model):
     content = GenericRelation(Content, related_query_name="items")
     created = models.DateTimeField(auto_now_add=True)
+
+    def get_content(self):...
 
     class Meta:
         abstract = True

@@ -5,20 +5,24 @@
 
 {% block content %}
     <div class="chat-detail" id="{{object.id}}">
-        <h2>{{object.name}}</h2>
+        <h2>{{object.chat_name}}</h2>
     </div>
-    <div class="chat-messages">
-        <h3>Messages</h3>
-    {% for content in contents %}
-        <p>{{ content.content_object.get_content }}</p>
-    {% endfor %}
+    <div class="chat-materials">
+        <h3 id="materials-button" data-url="{% url 'chat_api:chat-get-contents' object.id%}">
+            <a href="#">Study materials</a>
+        </h3>
+        <div id="materials" data-status="shown">
+            {% for content in contents %}
+                <p>{{ content.content_object.get_content }}</p>
+            {% endfor %}
+        </div>
     </div>
     <div class="chat-form">
         <h3>Send a Message</h3>
         <form>
             {% csrf_token %}
             {{ form.as_p }}
-            <div class="send-button" data-url="{% url 'chat_api:save_content' %}">
+            <div class="send-button" data-url="{% url 'chat_api:chat-save-content' object.id %}">
                 <button type="submit">Send</button>
             </div>
         </form>
@@ -27,7 +31,7 @@
         <h3>Generate Questions</h3>
         <form>
             {% csrf_token %}
-            <div class="generate-button" data-url="{% url 'chat_api:generate_questions' %}">
+            <div class="generate-button" data-url="{% url 'chat_api:chat-generate-questions' object.id %}">
                 <button type="submit">Generate</button>
             </div>
         </form>
@@ -39,4 +43,5 @@
     <script src="{% static 'js/send_button.js' %}"></script>
     <script src="{% static 'js/generate_button.js' %}"></script>
     <script src="{% static 'js/socket.js' %}"></script>
+    <script src="{% static 'js/materials.js' %}"></script>
 {% endblock scripts %}
