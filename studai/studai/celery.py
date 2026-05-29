@@ -1,7 +1,6 @@
 import os
 import channels.layers
 from asgiref.sync import async_to_sync
-from time import sleep
 from celery import Celery
 from chat.services.socket import WebSocketServices
 
@@ -13,8 +12,8 @@ app.autodiscover_tasks()
 
 
 @app.task()
-def generate_questions(chat_related_id: int):
-    group_name = WebSocketServices.get_group_name(chat_related_id)
+def generate_questions(chat_id: int):
+    group_name = WebSocketServices.get_group_name(chat_id)
     channel_layer = channels.layers.get_channel_layer()
     async_to_sync(channel_layer.group_send)(
         group_name, {"type": "chat.message", "is_ready": True}
