@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', e=>{
     const materials = document.getElementById("materials")
     const materialsButton = document.getElementById("materials-button");
-    // TODO url fetching
     materialsButton.addEventListener('click', e=>{
         let status = materials.dataset.status; 
         let apiUrl = materialsButton.dataset.url;
