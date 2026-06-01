@@ -1,9 +1,8 @@
 from django.db.transaction import atomic
-from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.exceptions import ValidationError
 from chat.models import Content, TextItem, Chat
-
-
-class ContentAPIServices:
+    
+class TextContentServices:
     @staticmethod
     @atomic
     def save_text_content(text_content: str, chat: Chat):

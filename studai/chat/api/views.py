@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from chat.models import Chat
-from chat.services.content import ContentAPIServices
+from chat.services.content import TextContentServices
 from studai.celery import generate_questions
 from .serializers import ContentSerializer
 
@@ -30,9 +30,9 @@ class ChatViewSet(ViewSet):
 
     @action(detail=True, methods=["post"])
     def save_content(self, request: Request, pk=None):
-        text_content = ContentAPIServices.get_text_content(request.data)
+        text_content = TextContentServices.get_text_content(request.data)
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
-        ContentAPIServices.save_text_content(chat, text_content)
+        TextContentServices.save_text_content(chat=chat, text_content=text_content)
         return Response({"status": "created"})
 
     @action(detail=True, methods=["get"])
