@@ -1,8 +1,8 @@
 from django.contrib.sessions.backends.base import SessionBase
 
 
-class SessionServices:
-    NAMESPACE = "chat"
+class QuestionSessionServices:
+    NAMESPACE = "question"
 
     def __init__(self, session: SessionBase):
         self.session = session
@@ -18,7 +18,7 @@ class SessionServices:
             return False
         if self.questions is None:
             return False
-        if self.current_index+1 >= len(self.questions):
+        if self.current_index + 1 >= len(self.questions):
             return False
         return True
 
@@ -29,7 +29,7 @@ class SessionServices:
     @property
     def session_data(self):
         return self.session[self.NAMESPACE]
-    
+
     @property
     def questions(self):
         return self.session_data.get("questions")
@@ -41,3 +41,6 @@ class SessionServices:
     def set_index(self, question_index: int):
         self.session_data["current_question_index"] = question_index
         self.session.modified = True
+
+    def clear(self):
+        self.session.pop(self.NAMESPACE, None)

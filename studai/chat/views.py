@@ -1,12 +1,8 @@
-import random
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
-from django.views import View
 from logging import getLogger
-from questions.models import Question
-from .services.session import SessionServices
 from .models import Chat
 from .forms import TextContentForm
 
@@ -50,35 +46,3 @@ class ChatDetailView(LoginRequiredMixin, RelatedIDChatViewMixin, DetailView):
         context["contents"] = self.object.contents.all()
         context["form"] = self._get_message_form()
         return context
-
-
-class ChatQuestionView(LoginRequiredMixin, RelatedIDChatViewMixin, DetailView):
-    def dispatch(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
-        self.session = SessionServices(request.session)
-        return super().dispatch(request, *args, **kwargs)
-
-    def generate_random_questions(self):
-        question_ids = list(
-            Question.objects.filter(chat=self.object).values_list("id", flat=True)
-        )
-        random.shuffle(question_ids)
-        return question_ids
-
-    def get(self, request: HttpRequest, pk: int):
-        self.object = self.get_object()
-        if not self.session.active:
-            questions = self.generate_random_questions()
-            index = 0
-            self.session.set_questions(questions)
-            self.session.set_index(index)
-        else:
-            index = self.session.current_index
-            questions = self.session.questions
-
-        question_id = questions[index]
-        question = get_object_or_404(Question, id=question_id)
-        logger.info(
-            f"Question {question} is served for chat {self.object.id} at index {index}"
-        )
-        return HttpResponse(f"Question: {question.question_text}, Options: {question.options}")
-        # TODO

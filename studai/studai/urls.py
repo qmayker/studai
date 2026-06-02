@@ -17,10 +17,17 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("chats/", include("chat.urls", namespace="chat")),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path("api/", include("chat.api.urls", namespace="chat_api")),
+    path("questions/", include("questions.urls", namespace="questions")),
 ]
+
+if settings.DEBUG:
+    from django.conf.urls.static import static
+
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
