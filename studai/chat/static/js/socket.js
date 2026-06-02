@@ -8,9 +8,10 @@ document.addEventListener("DOMContentLoaded", function () {
             + '/'
     );
 
+    // TODO -  redirect to another page
     chatSocket.onmessage = function (e) {
         const data = JSON.parse(e.data); 
-        console.log(data);
+        window.location.replace()
     };
 
     chatSocket.onclose = function(e) {

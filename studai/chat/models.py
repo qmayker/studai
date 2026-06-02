@@ -2,9 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from logging import Logger
 from .fields import RelatedIDField
-from .services.question import QuestionServices
 
 # Create your models here.
 
@@ -66,18 +64,4 @@ class TextItem(ItemBase):
         return self.text_content
 
 
-class Question(models.Model):
-    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="questions")
-    question_text = models.TextField()
-    options = models.JSONField()
-    correct_answer_letter = models.CharField(max_length=1)
-    created = models.DateTimeField(auto_now_add=True)
 
-    @property
-    def question_obj(self, logger: Logger):
-        return QuestionServices(
-            logger=logger,
-            answers=self.options,
-            question_name=self.question_text,
-            correct_answer_letter=self.correct_answer_letter,
-        )

@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
-from .models import Chat, Content, TextItem, Question
+from questions.admin import QuestionInline
+from .models import Chat, Content, TextItem
 
 # Register your models here.
 
@@ -16,15 +17,6 @@ class ContentInline(admin.TabularInline):
     model = Content
     classes = ["collapse"]
     extra = 0
-
-
-class QuestionInline(admin.TabularInline):
-    model = Question
-    classes = ["collapse"]
-    extra = 0
-
-    def has_change_permission(self, request, obj=None):
-        return False
 
 
 @admin.register(Content)
@@ -49,10 +41,3 @@ class TextAdmin(admin.ModelAdmin):
     list_filter = ("created",)
     search_fields = ("text_content",)
     inlines = [ContentGenericInline]
-
-
-@admin.register(Question)
-class QuestionAdmin(admin.ModelAdmin):
-    list_display = ("id", "chat", "question_text", "created")
-    list_filter = ("created",)
-    search_fields = ("question_text",)

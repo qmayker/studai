@@ -126,7 +126,7 @@ class GeminiAgent:
 
 @shared_task
 def process_chunk(chunk: str, chat_id: int):
-    from chat.models import Question
+    from questions.models import Question as QuestionModel
 
     logger = get_logger(__name__)
     agent = GeminiAgent(config=GeminiConfig.get_config(), logger=logger)
@@ -136,12 +136,12 @@ def process_chunk(chunk: str, chat_id: int):
     for question in questions:
         answers = question.model_dump()["answers"]
         questions_objects.append(
-            Question(
+            QuestionModel(
                 chat_id=chat_id,
                 question_text=question.question,
                 correct_answer_letter=question.correct_answer_letter,
                 options=answers,
             )
         )
-    Question.objects.bulk_create(questions_objects)
+    QuestionModel.objects.bulk_create(questions_objects)
     # TODO - save response to db and send to ws

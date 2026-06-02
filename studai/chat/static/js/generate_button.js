@@ -7,5 +7,10 @@ document.addEventListener("DOMContentLoaded", function () {
     generateButton.addEventListener('click', (e)=>{
         e.preventDefault();
         fetch(url);
+        let buttonDiv = e.target.parentElement;
+        let p = document.createElement("p");
+        p.innerText = "Generating questions...";
+        buttonDiv.innerHTML = "";
+        buttonDiv.appendChild(p);
     });
 });
