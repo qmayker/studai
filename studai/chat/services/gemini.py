@@ -6,7 +6,9 @@ from google.genai import types
 from logging import Logger
 from pydantic import BaseModel
 from decouple import config
+from chat.models import Chat
 from .socket import send_callback
+
 
 FAKE_RESPONSE = {
     "questions": [
@@ -124,7 +126,7 @@ class GeminiAgent:
         for chunk in chunks:
             if self.logger:
                 self.logger.info(f"Processing chunk: {chunk[:50]}...")
-            tasks.append(process_chunk.s(chunk))
+            tasks.append(process_chunk.s(chunk, chat_id=chat_id))
         chord(tasks)(send_callback.s(chat_id=chat_id))
 
     def _generate_question(self, text: str):
@@ -132,7 +134,7 @@ class GeminiAgent:
 
 
 @shared_task
-def process_chunk(chunk: str):
+def process_chunk(chunk: str, chat_id: int):
     logger = get_logger(__name__)
     agent = GeminiAgent(config=GeminiConfig.get_config(), logger=logger)
     response = agent._generate_question(text=chunk)

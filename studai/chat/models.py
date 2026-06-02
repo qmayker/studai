@@ -2,8 +2,9 @@ from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
-
+from logging import Logger
 from .fields import RelatedIDField
+from .services.question import QuestionService
 
 # Create your models here.
 
@@ -18,7 +19,10 @@ class Chat(models.Model):
 
     class Meta:
         ordering = ["-created"]
-        indexes = [models.Index(fields=["created"])]
+        indexes = [
+            models.Index(fields=["created"]),
+            models.Index(fields=["related_id", "user"]),
+        ]
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -49,7 +53,7 @@ class ItemBase(models.Model):
     content = GenericRelation(Content, related_query_name="items")
     created = models.DateTimeField(auto_now_add=True)
 
-    def get_content(self):...
+    def get_content(self): ...
 
     class Meta:
         abstract = True
@@ -60,3 +64,20 @@ class TextItem(ItemBase):
 
     def get_content(self):
         return self.text_content
+
+
+class Question(models.Model):
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="questions")
+    question_text = models.TextField()
+    options = models.JSONField()
+    correct_answer_letter = models.CharField(max_length=1)
+    created = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def question_obj(self, logger: Logger):
+        return QuestionService(
+            logger=logger,
+            answers=self.options,
+            question_name=self.question_text,
+            correct_answer_letter=self.correct_answer_letter,
+        )
