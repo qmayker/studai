@@ -6,7 +6,6 @@ from google.genai import types
 from logging import Logger
 from pydantic import BaseModel
 from decouple import config
-from chat.models import Chat
 from .socket import send_callback
 
 
@@ -113,14 +112,6 @@ class GeminiAgent:
         for i in range(0, len(text), GeminiAgent.CHUNKS_SIZE):
             yield text[i : i + GeminiAgent.CHUNKS_SIZE]
 
-    def test(self):
-        response = self.client.models.generate_content(
-            model="gemini-3.5-flash",
-            config=self.config,
-            contents="How does LLM work? Explain like I am 10 years old.",
-        )
-        self.logger.info(f"Received response: {response.text}")
-
     def generate_tasks(self, chunks: Generator[str, None, None], chat_id: int):
         tasks = []
         for chunk in chunks:
@@ -129,13 +120,28 @@ class GeminiAgent:
             tasks.append(process_chunk.s(chunk, chat_id=chat_id))
         chord(tasks)(send_callback.s(chat_id=chat_id))
 
-    def _generate_question(self, text: str):
-        return FAKE_RESPONSE
+    def _generate_question(self, text: str) -> Questions:
+        return Questions.model_validate(FAKE_RESPONSE)
 
 
 @shared_task
 def process_chunk(chunk: str, chat_id: int):
+    from chat.models import Question
+
     logger = get_logger(__name__)
     agent = GeminiAgent(config=GeminiConfig.get_config(), logger=logger)
     response = agent._generate_question(text=chunk)
+    questions = response.questions
+    questions_objects = []
+    for question in questions:
+        answers = question.model_dump()["answers"]
+        questions_objects.append(
+            Question(
+                chat_id=chat_id,
+                question_text=question.question,
+                correct_answer_letter=question.correct_answer_letter,
+                options=answers,
+            )
+        )
+    Question.objects.bulk_create(questions_objects)
     # TODO - save response to db and send to ws

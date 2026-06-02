@@ -4,7 +4,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from logging import Logger
 from .fields import RelatedIDField
-from .services.question import QuestionService
+from .services.question import QuestionServices
 
 # Create your models here.
 
@@ -75,7 +75,7 @@ class Question(models.Model):
 
     @property
     def question_obj(self, logger: Logger):
-        return QuestionService(
+        return QuestionServices(
             logger=logger,
             answers=self.options,
             question_name=self.question_text,
