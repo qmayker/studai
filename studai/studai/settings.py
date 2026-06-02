@@ -123,6 +123,7 @@ STATIC_URL = "static/"
 # Celery
 
 CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_RESULT_BACKEND = "redis://redis:6379/1"
 
 # Channels
 
@@ -139,21 +140,18 @@ CHANNEL_LAYERS = {
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-
     "formatters": {
         "simple": {
             "format": "[{levelname}] {message}",
             "style": "{",
         },
     },
-
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "simple",
         },
     },
-
     "root": {
         "handlers": ["console"],
         "level": "INFO",
