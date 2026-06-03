@@ -1,11 +1,12 @@
 import random
+from django.forms import ChoiceField, RadioSelect
 from django.db.models import QuerySet
 
 
 class QuestionServices:
     def __init__(
         self,
-        options: dict,
+        options: list[dict],
         question_name: str,
         correct_answer_letter: str,
     ):
@@ -23,6 +24,15 @@ class QuestionServices:
     @property
     def get_answer_text(self, letter: str) -> str | None:
         return self.options.get(letter)
+
+    @property
+    def choices(self) -> list[tuple[str, str]]:
+        choices = []
+        for option_info in self.options:
+            letter = option_info["letter"]
+            text = option_info["text"]
+            choices.append((letter, f"{letter}. {text}"))
+        return choices
 
     def is_correct(self, answer_letter: str) -> bool:
         return answer_letter.upper() == self.correct_answer_letter.upper()

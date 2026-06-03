@@ -8,28 +8,18 @@
 
 
 {% block content %}
+
     <div class="question-container"> 
-        <h2>{{ service.question_name }}</h2> 
         <form method="post">{% csrf_token %} 
-            {{form.errors}}
-            <div id="options">
-                {% for option in service.options %}
-                <div class="option"> 
-                    <label> 
-                        <input type="radio" name="answer" value="{{option.letter}}" required > 
-                        <strong>{{ option.letter }}.</strong> {{ option.text }} 
-                    </label> 
-                </div> 
-                {% endfor %}
-            </div>
+            {{form.as_p}}
             
             {% if end %}
                 <div id="endButton">
-                    <button type="submit">Завершити</button>
+                    <button type="submit">Next</button>
                 </div>
             {% else %}
                 <div id="answerButton">
-                    <button type="submit">Відповісти</button> 
+                    <button type="submit">Finish test</button> 
                 </div>
             {% endif %}
             </form>

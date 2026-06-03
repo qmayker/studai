@@ -46,14 +46,22 @@ class ChatQuestionView(LoginRequiredMixin, View):
     def get(self, request: HttpRequest, chat_related_id: int):
         if not self.session.active:
             questions = QuestionServices.generate_random_questions_id(
-                chat_related_id=chat_related_id, qs=self.get_queryset()
+                chat_related_id=chat_related_id,
+                qs=self.get_queryset(chat_related_id=chat_related_id),
             )
             self.session.start_session(questions=questions)
         self.service = self.get_service(chat_rel_id=chat_related_id)
-        return self.render_response()
+        form = AnswerForm(logger=logger, question_service=self.service)
+        return self.render_response(form=form)
 
     def post(self, request: HttpRequest, chat_related_id: int):
         self.service = self.get_service(chat_rel_id=chat_related_id)
+        form = AnswerForm(
+            logger=logger, question_service=self.service, data=request.POST
+        )
+        if form.is_valid():
+            # TODO form validation
+            logger.info(f"{form.cleaned_data}")
         return HttpResponse("ok")
 
     def get_context_data(self, service, end: bool, **kwargs):
