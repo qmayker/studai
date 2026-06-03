@@ -1,11 +1,13 @@
 import random
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.http import HttpRequest, HttpResponse
 from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from logging import getLogger
 from chat.models import Chat
+from .forms import AnswerForm
 from .services.sessions import QuestionSessionServices
+from .services.question import QuestionServices
 from .models import Question
 
 # Create your views here.
@@ -15,39 +17,53 @@ logger = getLogger(__name__)
 
 class ChatQuestionView(LoginRequiredMixin, View):
     model = Question
+    template = "questions/detail.html"
 
-    def get_queryset(self, chat_id: int):
+    def get_queryset(self, chat_related_id: int):
         qs = self.model.objects.all()
-        return qs.filter(chat_id=chat_id, chat__user=self.request.user)
+        return qs.filter(chat__related_id=chat_related_id, chat__user=self.request.user)
+
+    def get_service(self, chat_rel_id: int) -> QuestionServices:
+        questions = self.session.questions
+        index = self.session.current_index
+        question_id = questions[index]
+        question = get_object_or_404(
+            self.get_queryset(chat_related_id=chat_rel_id), id=question_id
+        )
+        return question.question_obj
 
     def dispatch(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
-        self.session = QuestionSessionServices(request.session)
+        chat_related_id = kwargs.get("chat_related_id")
+        self.chat = get_object_or_404(
+            Chat, related_id=chat_related_id, user=self.request.user
+        )
+        self.session = QuestionSessionServices(
+            request.session, chat_rel_id=chat_related_id
+        )
+
         return super().dispatch(request, *args, **kwargs)
 
-    def generate_random_questions(self, chat_id: int):
-        question_ids = list(
-            self.get_queryset(chat_id=chat_id).values_list("id", flat=True)
-        )
-        random.shuffle(question_ids)
-        return question_ids
-
-    def get(self, request: HttpRequest, chat_id: int):
+    def get(self, request: HttpRequest, chat_related_id: int):
         if not self.session.active:
-            questions = self.generate_random_questions(chat_id=chat_id)
-            index = 0
-            self.session.set_questions(questions)
-            self.session.set_index(index)
-        else:
-            index = self.session.current_index
-            questions = self.session.questions
+            questions = QuestionServices.generate_random_questions_id(
+                chat_related_id=chat_related_id, qs=self.get_queryset()
+            )
+            self.session.start_session(questions=questions)
+        self.service = self.get_service(chat_rel_id=chat_related_id)
+        return self.render_response()
 
-        question_id = questions[index]
-        question = get_object_or_404(Question, id=question_id)
-        logger.info(
-            f"Question {question} is served for chat {chat_id} at index {index}"
+    def post(self, request: HttpRequest, chat_related_id: int):
+        self.service = self.get_service(chat_rel_id=chat_related_id)
+        return HttpResponse("ok")
+
+    def get_context_data(self, service, end: bool, **kwargs):
+        context = {"service": service, "end": end}
+        context.update(**kwargs)
+        return context
+
+    def render_response(self, **kwargs):
+        return render(
+            self.request,
+            self.template,
+            context=self.get_context_data(self.service, self.session.end, **kwargs),
         )
-        self.session.clear()
-        return HttpResponse(
-            f"Question: {question.question_text}, Options: {question.options}"
-        )
-        # TODO
