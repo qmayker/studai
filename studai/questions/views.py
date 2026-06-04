@@ -22,6 +22,9 @@ class ChatQuestionView(LoginRequiredMixin, View):
         qs = self.model.objects.all()
         return qs.filter(chat__related_id=chat_related_id, chat__user=self.request.user)
 
+    def get_form(self, **kwargs):
+        return AnswerForm(logger=logger, question_service=self.service, **kwargs)
+
     def dispatch(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
         chat_related_id = kwargs.get("chat_related_id")
         self.chat = get_object_or_404(
@@ -44,20 +47,29 @@ class ChatQuestionView(LoginRequiredMixin, View):
         self.service = QuestionServices.get_service(
             self.queryset, self.session.current_question_id
         )
-        form = AnswerForm(logger=logger, question_service=self.service)
+        form = self.get_form()
         return self.render_response(form=form)
 
     def post(self, request: HttpRequest, chat_related_id: int):
         self.service = QuestionServices.get_service(
             self.queryset, self.session.current_question_id
         )
-        form = AnswerForm(
-            logger=logger, question_service=self.service, data=request.POST
+        form = self.get_form(
+            data=request.POST
         )
-        if form.is_valid():
-            cd = form.cleaned_data
-            self.session.set_answer(answer_letter=cd["answer"])
-            logger.info(f"{self.session.end_session(end=cd['end'], qs=self.queryset)}")
+        if not form.is_valid():
+            return self.render_response(form=form)
+        cd = form.cleaned_data
+        self.session.set_answer(answer_letter=cd["answer"])
+        if self.session.end:
+            self.session.end_session(qs=self.queryset)
+            return
+        self.session.next_page()
+        form = self.get_form()
+        return self.render_response(form=form)
+
+        logger.info(f"{self.session.end_session(end=cd['end'], qs=self.queryset)}")
+
         return HttpResponse("ok")
 
     def get_context_data(self, service, end: bool, **kwargs):

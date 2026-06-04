@@ -88,7 +88,8 @@ class QuestionSessionServices:
 
         return self.answers
 
-    def end_session(self, end: bool, qs):
-        if not end:
-            return
+    def end_session(self, qs):
         return self._end(qs=qs)
+    
+    def next_page(self):
+        self.set_index(self.current_index+1)

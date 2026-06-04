@@ -5,7 +5,7 @@ from .services.question import QuestionServices
 
 class AnswerForm(Form):
     answer = ChoiceField(widget=RadioSelect)
-    end = BooleanField(widget=HiddenInput)
+    end = BooleanField(widget=HiddenInput, required=False)
 
     def __init__(
         self, *args, logger: Logger, question_service: QuestionServices = None, **kwargs
