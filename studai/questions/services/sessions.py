@@ -1,3 +1,4 @@
+from logging import Logger
 from django.contrib.sessions.backends.base import SessionBase
 from django.db.models import QuerySet
 from questions.models import Question
@@ -7,9 +8,10 @@ class QuestionSessionServices:
     NAMESPACE = "question"
 
     # TODO - chat_id namespace
-    def __init__(self, session: SessionBase, chat_rel_id: int):
+    def __init__(self, session: SessionBase, chat_rel_id: int, logger: Logger):
         self.session = session
         self.chat_rel_id = str(chat_rel_id)
+        self.logger = logger
         if not self.session.get(self.NAMESPACE):
             self.session[self.NAMESPACE] = {}
         if not self.session[self.NAMESPACE].get(self.chat_namespace):
@@ -82,14 +84,17 @@ class QuestionSessionServices:
         questions = qs.filter(id__in=self.questions).values_list(
             "id", "correct_answer_letter"
         )
+        correct = []
+        incorrect = []
         for question in questions:
             q_id, answer = question
-            # TODO
+            self.answers.get('')
+            self.logger.info(f"{q_id, answer}")
 
         return self.answers
 
     def end_session(self, qs):
         return self._end(qs=qs)
-    
+
     def next_page(self):
-        self.set_index(self.current_index+1)
+        self.set_index(self.current_index + 1)

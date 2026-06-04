@@ -32,7 +32,7 @@ class ChatQuestionView(LoginRequiredMixin, View):
         )
         self.queryset = self.get_queryset(chat_related_id=chat_related_id)
         self.session = QuestionSessionServices(
-            request.session, chat_rel_id=chat_related_id
+            request.session, chat_rel_id=chat_related_id, logger=logger
         )
 
         return super().dispatch(request, *args, **kwargs)
@@ -54,23 +54,16 @@ class ChatQuestionView(LoginRequiredMixin, View):
         self.service = QuestionServices.get_service(
             self.queryset, self.session.current_question_id
         )
-        form = self.get_form(
-            data=request.POST
-        )
-        if not form.is_valid():
-            return self.render_response(form=form)
-        cd = form.cleaned_data
-        self.session.set_answer(answer_letter=cd["answer"])
-        if self.session.end:
-            self.session.end_session(qs=self.queryset)
-            return
-        self.session.next_page()
-        form = self.get_form()
+        form = self.get_form(data=request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            self.session.set_answer(answer_letter=cd["answer"])
+            if self.session.end:
+                self.session.end_session(qs=self.queryset)
+                return HttpResponse("end")
+            self.session.next_page()
+            form = self.get_form()
         return self.render_response(form=form)
-
-        logger.info(f"{self.session.end_session(end=cd['end'], qs=self.queryset)}")
-
-        return HttpResponse("ok")
 
     def get_context_data(self, service, end: bool, **kwargs):
         context = {"service": service, "end": end}
