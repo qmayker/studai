@@ -17,12 +17,11 @@ logger = getLogger(__name__)
 class ChatQuestionView(LoginRequiredMixin, View):
     model = Question
     template = "questions/detail.html"
-    end_template = "questions/end.html"
 
     def get_queryset(self, chat_related_id: int):
         qs = self.model.objects.all()
         return qs.filter(chat__related_id=chat_related_id, chat__user=self.request.user)
-        
+
     def dispatch(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
         chat_related_id = kwargs.get("chat_related_id")
         self.chat = get_object_or_404(
@@ -42,21 +41,23 @@ class ChatQuestionView(LoginRequiredMixin, View):
                 qs=self.get_queryset(chat_related_id=chat_related_id),
             )
             self.session.start_session(questions=questions)
-        self.service = QuestionServices.get_service(self.queryset, self.session.current_question_id)
+        self.service = QuestionServices.get_service(
+            self.queryset, self.session.current_question_id
+        )
         form = AnswerForm(logger=logger, question_service=self.service)
         return self.render_response(form=form)
 
     def post(self, request: HttpRequest, chat_related_id: int):
-        self.service = QuestionServices.get_service(self.queryset, self.session.current_question_id)
+        self.service = QuestionServices.get_service(
+            self.queryset, self.session.current_question_id
+        )
         form = AnswerForm(
             logger=logger, question_service=self.service, data=request.POST
         )
         if form.is_valid():
-            answer = form.cleaned_data["answer"]
-            self.session.set_answer(answer_letter=answer)
-            if self.end:
-                ...
-            logger.info(f"{form.cleaned_data}")
+            cd = form.cleaned_data
+            self.session.set_answer(answer_letter=cd["answer"])
+            logger.info(f"{self.session.end_session(end=cd['end'], qs=self.queryset)}")
         return HttpResponse("ok")
 
     def get_context_data(self, service, end: bool, **kwargs):

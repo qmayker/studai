@@ -1,4 +1,6 @@
 from django.contrib.sessions.backends.base import SessionBase
+from django.db.models import QuerySet
+from questions.models import Question
 
 
 class QuestionSessionServices:
@@ -39,7 +41,7 @@ class QuestionSessionServices:
         return self.session[self.NAMESPACE][self.chat_namespace]
 
     @property
-    def questions(self):
+    def questions(self) -> list[int]:
         return self.session_data.get("questions")
 
     @property
@@ -74,4 +76,19 @@ class QuestionSessionServices:
         self.set_index(0)
 
     def set_answer(self, answer_letter: str):
-        self.answers[f"q_{self.current_question_id}"] = answer_letter
+        self.answers[f"{self.current_question_id}"] = answer_letter
+
+    def _end(self, qs: QuerySet[Question]):
+        questions = qs.filter(id__in=self.questions).values_list(
+            "id", "correct_answer_letter"
+        )
+        for question in questions:
+            q_id, answer = question
+            # TODO
+
+        return self.answers
+
+    def end_session(self, end: bool, qs):
+        if not end:
+            return
+        return self._end(qs=qs)
