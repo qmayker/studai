@@ -15,11 +15,15 @@
             
             {% if end %}
                 <div id="endButton">
+                    <input type="hidden" value="False" name="end">
                     <button type="submit">Next</button>
+                    
                 </div>
             {% else %}
                 <div id="answerButton">
+                    <input type="hidden" value="True" name="end">
                     <button type="submit">Finish test</button> 
+                    
                 </div>
             {% endif %}
             </form>

@@ -1,5 +1,5 @@
 import random
-from django.forms import ChoiceField, RadioSelect
+from django.shortcuts import get_object_or_404
 from django.db.models import QuerySet
 
 
@@ -41,6 +41,15 @@ class QuestionServices:
         question_ids = list(qs.values_list("id", flat=True))
         random.shuffle(question_ids)
         return question_ids
+
+    @staticmethod
+    def get_service(qs: QuerySet, id: int | str):
+        # TODO: if questions delets from db, handle error
+        question = get_object_or_404(
+            qs,
+            id=id,
+        )
+        return question.question_obj
 
     def __str__(self):
         return self.question_name

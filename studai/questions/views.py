@@ -1,4 +1,3 @@
-import random
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpRequest, HttpResponse
 from django.views.generic import View
@@ -18,25 +17,18 @@ logger = getLogger(__name__)
 class ChatQuestionView(LoginRequiredMixin, View):
     model = Question
     template = "questions/detail.html"
+    end_template = "questions/end.html"
 
     def get_queryset(self, chat_related_id: int):
         qs = self.model.objects.all()
         return qs.filter(chat__related_id=chat_related_id, chat__user=self.request.user)
-
-    def get_service(self, chat_rel_id: int) -> QuestionServices:
-        questions = self.session.questions
-        index = self.session.current_index
-        question_id = questions[index]
-        question = get_object_or_404(
-            self.get_queryset(chat_related_id=chat_rel_id), id=question_id
-        )
-        return question.question_obj
-
+        
     def dispatch(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
         chat_related_id = kwargs.get("chat_related_id")
         self.chat = get_object_or_404(
             Chat, related_id=chat_related_id, user=self.request.user
         )
+        self.queryset = self.get_queryset(chat_related_id=chat_related_id)
         self.session = QuestionSessionServices(
             request.session, chat_rel_id=chat_related_id
         )
@@ -50,17 +42,20 @@ class ChatQuestionView(LoginRequiredMixin, View):
                 qs=self.get_queryset(chat_related_id=chat_related_id),
             )
             self.session.start_session(questions=questions)
-        self.service = self.get_service(chat_rel_id=chat_related_id)
+        self.service = QuestionServices.get_service(self.queryset, self.session.current_question_id)
         form = AnswerForm(logger=logger, question_service=self.service)
         return self.render_response(form=form)
 
     def post(self, request: HttpRequest, chat_related_id: int):
-        self.service = self.get_service(chat_rel_id=chat_related_id)
+        self.service = QuestionServices.get_service(self.queryset, self.session.current_question_id)
         form = AnswerForm(
             logger=logger, question_service=self.service, data=request.POST
         )
         if form.is_valid():
-            # TODO form validation
+            answer = form.cleaned_data["answer"]
+            self.session.set_answer(answer_letter=answer)
+            if self.end:
+                ...
             logger.info(f"{form.cleaned_data}")
         return HttpResponse("ok")
 

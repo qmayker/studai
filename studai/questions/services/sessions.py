@@ -25,7 +25,7 @@ class QuestionSessionServices:
         if self.current_index >= len(self.questions):
             return False
         return True
-    
+
     @property
     def chat_namespace(self):
         return f"chat_{self.chat_rel_id}"
@@ -52,6 +52,12 @@ class QuestionSessionServices:
     def current_question_id(self):
         return self.questions[self.current_index]
 
+    @property
+    def answers(self) -> dict:
+        if self.session_data.get("answers") is None:
+            self.session_data["answers"] = {}
+        return self.session_data["answers"]
+
     def set_questions(self, questions: list[int]):
         self.session_data["questions"] = questions
         self.session.modified = True
@@ -63,7 +69,9 @@ class QuestionSessionServices:
     def clear(self):
         self.session.pop(self.NAMESPACE, None)
 
-    def start_session(self, questions:list):
+    def start_session(self, questions: list):
         self.set_questions(questions)
         self.set_index(0)
 
+    def set_answer(self, answer_letter: str):
+        self.answers[f"q_{self.current_question_id}"] = answer_letter
