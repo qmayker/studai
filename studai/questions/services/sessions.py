@@ -84,11 +84,8 @@ class QuestionSessionServices:
         questions = qs.filter(id__in=self.questions).values_list(
             "id", "correct_answer_letter"
         )
-        correct = []
-        incorrect = []
         for question in questions:
             q_id, answer = question
-            self.answers.get('')
             self.logger.info(f"{q_id, answer}")
 
         return self.answers
