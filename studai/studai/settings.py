@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "chat.apps.ChatConfig",
     "questions.apps.QuestionsConfig",
-    "quizess.apps.QuiezessConfig",
+    "quizess.apps.QuizessConfig",
     "rest_framework",
 ]
 
