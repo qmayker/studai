@@ -14,7 +14,11 @@ class TestAtempt(models.Model):
 
 
 class QuestionAttempt(models.Model):
-    question = models.ForeignKey(
-        "questions.Question", on_delete=models.CASCADE, related_name="attempts"
+    attempt = models.ForeignKey(
+        TestAtempt, on_delete=models.CASCADE, related_name="questions"
     )
-    answer = models.CharField(max_length=1)
+    question_text = models.TextField()
+    options = models.JSONField()
+    correct_answer_letter = models.CharField(max_length=1)
+    created = models.DateTimeField(auto_now_add=True)
+    answer = models.CharField(max_length=1, null=True)
