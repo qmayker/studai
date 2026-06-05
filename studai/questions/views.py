@@ -61,7 +61,7 @@ class ChatQuestionView(LoginRequiredMixin, View):
                 self.session.end_session(qs=self.queryset)
                 return HttpResponse("end")
             question_id = self.session.next_page()
-            self.question = Question.objects.get(question_id=question_id)
+            self.question = Question.objects.get(id=question_id)
             self._set_question_attempt(question=self.question)
             form = self.get_form()
             return self.render_response(form=form)
