@@ -37,8 +37,9 @@ class QuestionServices:
     def is_correct(self, answer_letter: str) -> bool:
         return answer_letter.upper() == self.correct_answer_letter.upper()
 
-    def get_question_ids(qs: QuerySet):
+    def get_random_question_ids(qs: QuerySet):
         question_ids = list(qs.values_list("id", flat=True))
+        random.shuffle(question_ids)
         return question_ids
 
     @staticmethod
