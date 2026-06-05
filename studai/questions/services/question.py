@@ -44,11 +44,7 @@ class QuestionServices:
 
     @staticmethod
     def get_question(qs: QuerySet, pk: int):
-        question = get_object_or_404(
-            qs,
-            pk=pk,
-        )
-        return question
+        return qs.get(pk=pk)
 
     def __str__(self):
         return self.question_name

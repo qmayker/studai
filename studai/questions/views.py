@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, render
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, Http404
 from django.views.generic import View
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import AccessMixin
 from logging import getLogger
 from chat.models import Chat
 from quizess.services.test_attempt import TestAtemptServices
@@ -16,7 +16,7 @@ from .models import Question
 logger = getLogger(__name__)
 
 
-class ChatQuestionView(LoginRequiredMixin, View):
+class ChatQuestionView(AccessMixin, View):
     model = Question
     template = "questions/detail.html"
 
@@ -28,7 +28,6 @@ class ChatQuestionView(LoginRequiredMixin, View):
         return AnswerForm(logger=logger, question_service=self.service, **kwargs)
 
     def dispatch(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
-        # TODO - move logic to other methods
         if not self.request.user.is_authenticated:
             return self.handle_no_permission()
         chat_related_id = kwargs.get("chat_related_id")
@@ -37,7 +36,6 @@ class ChatQuestionView(LoginRequiredMixin, View):
             request.session, chat_rel_id=chat_related_id, logger=logger
         )
         self.testAttemptService = TestAtemptServices(self.chat, self.request.user)
-        self._set_service()
         self._set_attempt(request=request, attemptService=self.testAttemptService)
 
         return super().dispatch(request, *args, **kwargs)
@@ -45,13 +43,18 @@ class ChatQuestionView(LoginRequiredMixin, View):
     def get(self, request: HttpRequest, chat_related_id: int):
         if not self.session.active:
             self._set_session_active()
+        if self.session.has_ended:
+            return self.render_end_response()
+        self._set_service()
         self._set_question_attempt(question=self.question)
         form = self.get_form()
         return self.render_response(form=form)
 
     def post(self, request: HttpRequest, chat_related_id: int):
-        # TODO - if handle error if session doesnt exist
         # TODO - handle error if new question does not exist
+        if not self.session.active:
+            return Http404("Session does not exist")
+        self._set_service()
         form = self.get_form(data=request.POST)
         if form.is_valid():
             cd = form.cleaned_data
@@ -61,9 +64,8 @@ class ChatQuestionView(LoginRequiredMixin, View):
             if self.session.end:
                 res = self.session.end_session()
                 logger.info(f"{res}")
-                return HttpResponse("end")
-            self.session.next_page()
-            self._set_service()
+                return self.render_end_response()
+            self.next_page()
             self._set_question_attempt(question=self.question)
             form = self.get_form()
             return self.render_response(form=form)
@@ -81,13 +83,22 @@ class ChatQuestionView(LoginRequiredMixin, View):
             context=self.get_context_data(self.service, self.session.end, **kwargs),
         )
 
+    def render_end_response(self):
+        return HttpResponse("end")
+
     def _set_service(self):
-        if not self.session.active:
-            return
-        self.question: Question = QuestionServices.get_question(
-            self.queryset, self.session.current_question_id
-        )
-        self.service = self.question.question_obj
+        # TODO handle error if the missing questions is the last one(test must end)
+        logger.info("Adding service to self")
+        try:
+            self.question: Question = QuestionServices.get_question(
+                self.queryset, self.session.current_question_id
+            )
+            self.service = self.question.question_obj
+        except Question.DoesNotExist as e:
+            self.session.delete_question(self.session.current_question_id)
+            self._set_service()
+            logger.error(f"{e}")
+        logger.info("Added service to self")
 
     def _set_attempt(self, request: HttpRequest, attemptService: TestAtemptServices):
         if request.method == "GET" and not self.session.active:
@@ -113,3 +124,7 @@ class ChatQuestionView(LoginRequiredMixin, View):
             Chat, related_id=chat_related_id, user=self.request.user
         )
         self.queryset = self.get_queryset(chat_related_id=chat_related_id)
+
+    def next_page(self):
+        self.session.next_page()
+        self._set_service()

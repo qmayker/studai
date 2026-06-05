@@ -91,6 +91,10 @@ class QuestionSessionServices:
     def question_attempt_ids(self) -> set[int]:
         return set(self.attempts.values())
 
+    @property
+    def has_ended(self) -> bool:
+        return self.session_data.get("ended", False)
+
     @modifying
     def set_questions(self, questions: list[int]):
         self.session_data["questions"] = questions
@@ -137,3 +141,11 @@ class QuestionSessionServices:
     @modifying
     def _create_attempts(self):
         self.session_data["attempts"] = {}
+
+    @modifying
+    def set_end(self):
+        self.session_data["ended"] = True
+
+    @modifying
+    def delete_question(self, question_id:int):
+        self.questions.remove(question_id)
