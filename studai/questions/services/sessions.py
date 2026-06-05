@@ -62,6 +62,16 @@ class QuestionSessionServices:
             self.session_data["answers"] = {}
         return self.session_data["answers"]
 
+    @property
+    def attempts(self) -> dict:
+        if self.session.get("attempts") is None:
+            self.session["attempts"] = {}
+        return self.session["attempts"]
+
+    @property
+    def attempt_id(self) -> int:
+        return self.session_data["attempt"]
+
     def set_questions(self, questions: list[int]):
         self.session_data["questions"] = questions
         self.session.modified = True
@@ -79,6 +89,7 @@ class QuestionSessionServices:
 
     def set_answer(self, answer_letter: str):
         self.answers[f"{self.current_question_id}"] = answer_letter
+        self.session.modified = True
 
     def _end(self, qs: QuerySet[Question]):
         questions = qs.filter(id__in=self.questions).values_list(
@@ -91,7 +102,16 @@ class QuestionSessionServices:
         return self.answers
 
     def end_session(self, qs):
-        return self._end(qs=qs)
+        self._end(qs=qs)
+        self.clear()
 
     def next_page(self):
-        self.set_index(self.current_index + 1)
+        new_index = self.current_index + 1
+        self.set_index(new_index)
+        return new_index
+
+    def set_attempt_id(self, attempt_id: int):
+        self.session_data["attempt"] = attempt_id
+
+    def set_question_attempt_id(self, question_attempt_id: int):
+        self.attempts[question_attempt_id] = self.current_question_id

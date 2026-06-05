@@ -37,19 +37,17 @@ class QuestionServices:
     def is_correct(self, answer_letter: str) -> bool:
         return answer_letter.upper() == self.correct_answer_letter.upper()
 
-    def generate_random_questions_id(chat_related_id: int, qs: QuerySet):
+    def get_question_ids(qs: QuerySet):
         question_ids = list(qs.values_list("id", flat=True))
-        random.shuffle(question_ids)
         return question_ids
 
     @staticmethod
-    def get_service(qs: QuerySet, id: int | str):
-        # TODO: if questions delets from db, handle error
+    def get_question(qs: QuerySet, pk: int):
         question = get_object_or_404(
             qs,
-            id=id,
+            pk=pk,
         )
-        return question.question_obj
+        return question
 
     def __str__(self):
         return self.question_name
