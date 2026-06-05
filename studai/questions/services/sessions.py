@@ -1,7 +1,24 @@
-from logging import Logger
 from django.contrib.sessions.backends.base import SessionBase
-from django.db.models import QuerySet
-from questions.models import Question
+from django.db.models import F
+from logging import Logger
+from functools import wraps
+from typing import NamedTuple
+from quizess.models import QuestionAttempt
+
+
+def modifying(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        result = func(self, *args, **kwargs)
+        self._session.modified = True
+        return result
+
+    return wrapper
+
+
+class TestResult(NamedTuple):
+    correct: list[int]
+    wrong: list[int]
 
 
 class QuestionSessionServices:
@@ -9,13 +26,13 @@ class QuestionSessionServices:
 
     # TODO - chat_id namespace
     def __init__(self, session: SessionBase, chat_rel_id: int, logger: Logger):
-        self.session = session
+        self._session = session
         self.chat_rel_id = str(chat_rel_id)
         self.logger = logger
-        if not self.session.get(self.NAMESPACE):
-            self.session[self.NAMESPACE] = {}
-        if not self.session[self.NAMESPACE].get(self.chat_namespace):
-            self.session[self.NAMESPACE][self.chat_namespace] = {}
+        if not self._session.get(self.NAMESPACE):
+            self._session[self.NAMESPACE] = {}
+        if not self._session[self.NAMESPACE].get(self.chat_namespace):
+            self._session[self.NAMESPACE][self.chat_namespace] = {}
 
     @property
     def active(self):
@@ -40,7 +57,7 @@ class QuestionSessionServices:
 
     @property
     def session_data(self):
-        return self.session[self.NAMESPACE][self.chat_namespace]
+        return self._session[self.NAMESPACE][self.chat_namespace]
 
     @property
     def questions(self) -> list[int]:
@@ -57,61 +74,66 @@ class QuestionSessionServices:
         return self.questions[self.current_index]
 
     @property
-    def answers(self) -> dict:
-        if self.session_data.get("answers") is None:
-            self.session_data["answers"] = {}
-        return self.session_data["answers"]
-
-    @property
     def attempts(self) -> dict:
-        if self.session.get("attempts") is None:
-            self.session["attempts"] = {}
-        return self.session["attempts"]
+        if self.session_data.get("attempts") is None:
+            self._create_attempts()
+        return self.session_data["attempts"]
 
     @property
     def attempt_id(self) -> int:
         return self.session_data["attempt"]
 
+    @property
+    def current_question_attempt_id(self) -> int:
+        return self.attempts[str(self.current_question_id)]
+
+    @property
+    def question_attempt_ids(self) -> set[int]:
+        return set(self.attempts.values())
+
+    @modifying
     def set_questions(self, questions: list[int]):
         self.session_data["questions"] = questions
-        self.session.modified = True
 
+    @modifying
     def set_index(self, question_index: int):
         self.session_data["current_question_index"] = question_index
-        self.session.modified = True
 
     def clear(self):
-        self.session.pop(self.NAMESPACE, None)
+        self._session.pop(self.NAMESPACE, None)
 
     def start_session(self, questions: list):
         self.set_questions(questions)
         self.set_index(0)
 
-    def set_answer(self, answer_letter: str):
-        self.answers[f"{self.current_question_id}"] = answer_letter
-        self.session.modified = True
-
-    def _end(self, qs: QuerySet[Question]):
-        questions = qs.filter(id__in=self.questions).values_list(
-            "id", "correct_answer_letter"
+    def _end(self) -> TestResult:
+        questions = self.question_attempt_ids
+        correct_answers = set(
+            QuestionAttempt.objects.filter(
+                id__in=questions, answer=F("correct_answer_letter")
+            ).values_list("id", flat=True)
         )
-        for question in questions:
-            q_id, answer = question
-            self.logger.info(f"{q_id, answer}")
+        wrong_answers = questions - correct_answers
+        return TestResult(correct=correct_answers, wrong=wrong_answers)
 
-        return self.answers
-
-    def end_session(self, qs):
-        self._end(qs=qs)
+    def end_session(self) -> TestResult:
+        r = self._end()
         self.clear()
+        return r
 
     def next_page(self):
         new_index = self.current_index + 1
         self.set_index(new_index)
         return new_index
 
+    @modifying
     def set_attempt_id(self, attempt_id: int):
         self.session_data["attempt"] = attempt_id
 
+    @modifying
     def set_question_attempt_id(self, question_attempt_id: int):
-        self.attempts[question_attempt_id] = self.current_question_id
+        self.attempts[str(self.current_question_id)] = question_attempt_id
+
+    @modifying
+    def _create_attempts(self):
+        self.session_data["attempts"] = {}

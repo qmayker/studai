@@ -43,7 +43,6 @@ class ChatQuestionView(LoginRequiredMixin, View):
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request: HttpRequest, chat_related_id: int):
-        logger.info(f"{self.session.active}")
         if not self.session.active:
             self._set_session_active()
         self._set_question_attempt(question=self.question)
@@ -56,12 +55,15 @@ class ChatQuestionView(LoginRequiredMixin, View):
         form = self.get_form(data=request.POST)
         if form.is_valid():
             cd = form.cleaned_data
-            self.session.set_answer(answer_letter=cd["answer"])
+            self.questionAttemptService.set_answer(
+                self.session.current_question_attempt_id, answer=cd["answer"]
+            )
             if self.session.end:
-                self.session.end_session(qs=self.queryset)
+                res = self.session.end_session()
+                logger.info(f"{res}")
                 return HttpResponse("end")
-            question_id = self.session.next_page()
-            self.question = Question.objects.get(id=question_id)
+            self.session.next_page()
+            self._set_service()
             self._set_question_attempt(question=self.question)
             form = self.get_form()
             return self.render_response(form=form)

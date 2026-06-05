@@ -15,3 +15,8 @@ class QuestionAttemptServices:
             options=question.options,
             correct_answer_letter=question.correct_answer_letter,
         )
+
+    def set_answer(self, id: int, answer: str):
+        return QuestionAttempt.objects.filter(id=id, attempt=self.attempt).update(
+            answer=answer
+        )
