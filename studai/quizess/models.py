@@ -7,7 +7,7 @@ from questions.services.question import QuestionServices
 
 class TestAtempt(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="attempt"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="attempts"
     )
     chat = models.ForeignKey(
         "chat.Chat", on_delete=models.CASCADE, related_name="attempts"
@@ -31,3 +31,23 @@ class QuestionAttempt(models.Model):
             question_name=self.question_text,
             correct_answer_letter=self.correct_answer_letter,
         )
+
+
+class TestResult(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="results"
+    )
+
+
+class Answer(models.Model):
+    class Statuses(models.TextChoices):
+        CO = "Correct"
+        WR = "Wrong"
+
+    question = models.OneToOneField(
+        QuestionAttempt, on_delete=models.CASCADE, related_name="result"
+    )
+    result = models.ForeignKey(
+        TestResult, on_delete=models.CASCADE, related_name="answers"
+    )
+    status = models.CharField(choices=Statuses)
