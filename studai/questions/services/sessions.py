@@ -121,7 +121,7 @@ class QuestionSessionServices:
 
     def end_session(self) -> TestResult:
         r = self._end()
-        self.clear()
+        self.set_end()
         return r
 
     def next_page(self):

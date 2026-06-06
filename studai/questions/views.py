@@ -43,6 +43,7 @@ class ChatQuestionView(AccessMixin, View):
 
     def get(self, request: HttpRequest, chat_related_id: int):
         if self.session.has_ended:
+            self.session.clear()
             return self.render_end_response()
         if not self.session.active:
             self._set_session_active()
@@ -90,6 +91,7 @@ class ChatQuestionView(AccessMixin, View):
         )
 
     def render_end_response(self):
+        logger.info(f"{self.session._session.items()}")
         return HttpResponse("end")
 
     def _set_service(self) -> bool:
@@ -142,7 +144,7 @@ class ChatQuestionView(AccessMixin, View):
         self.queryset = self.get_queryset(chat_related_id=chat_related_id)
 
     def next_page(self) -> bool:
-        """Next page"""
+        """Increase current_index by 1, get question"""
         self.session.next_page()
         return self._set_service()
 
