@@ -1,9 +1,9 @@
 from django.contrib.sessions.backends.base import SessionBase
-from django.db.models import F
+
 from logging import Logger
 from functools import wraps
 from typing import NamedTuple
-from quizess.models import QuestionAttempt
+
 
 
 def modifying(func):
@@ -109,20 +109,6 @@ class QuestionSessionServices:
         self._create_attempts()
         self.set_index(0)
 
-    def _end(self) -> TestResult:
-        questions = set(self.attempts)
-        correct_answers = set(
-            QuestionAttempt.objects.filter(
-                id__in=questions, answer=F("correct_answer_letter")
-            ).values_list("id", flat=True)
-        )
-        wrong_answers = questions - correct_answers
-        return TestResult(correct=correct_answers, wrong=wrong_answers)
-
-    def end_session(self) -> TestResult:
-        r = self._end()
-        self.set_end()
-        return r
 
     def next_page(self):
         new_index = self.current_index + 1

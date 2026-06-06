@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from questions.services.question import QuestionServices
+from .querysets import QuestionAttemptQueryset
 
 # Create your models here.
 
@@ -23,6 +24,7 @@ class QuestionAttempt(models.Model):
     correct_answer_letter = models.CharField(max_length=1)
     created = models.DateTimeField(auto_now_add=True)
     answer = models.CharField(max_length=1, null=True)
+    objects = QuestionAttemptQueryset.as_manager()
 
     @property
     def question_obj(self):

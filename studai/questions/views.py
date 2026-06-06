@@ -36,7 +36,7 @@ class ChatQuestionView(AccessMixin, View):
         self.session = QuestionSessionServices(
             request.session, chat_rel_id=chat_related_id, logger=logger
         )
-        self._get_attempt(request=request)
+        self.attemp = self._get_attempt(request=request)
         self.questionAttemptService = QuestionAttemptServices(attempt=self.attempt)
 
         return super().dispatch(request, *args, **kwargs)
@@ -91,7 +91,6 @@ class ChatQuestionView(AccessMixin, View):
         )
 
     def render_end_response(self):
-        logger.info(f"{self.session._session.items()}")
         return HttpResponse("end")
 
     def _set_service(self) -> bool:
@@ -118,9 +117,10 @@ class ChatQuestionView(AccessMixin, View):
         """Get or create TestAttempt object"""
         testAttemptService = TestAtemptServices(self.chat, self.request.user)
         if request.method == "GET" and not self.session.active:
-            self.attempt = testAttemptService.create()
+            attempt = testAttemptService.create()
         else:
-            self.attempt = testAttemptService.get(self.session.attempt_id)
+            attempt = testAttemptService.get(self.session.attempt_id)
+        return attempt
 
     def _create_question_attempt(self, question: Question) -> int:
         """Creates new QuestionAttempt, returns id"""
@@ -149,9 +149,10 @@ class ChatQuestionView(AccessMixin, View):
         return self._set_service()
 
     def end_test(self):
+        # TODO
         """Ends test"""
-        res = self.session.end_session()
-        logger.info(f"{res}")
+        res = TestAtemptServices.end(set(self.session.attempts))
+        self.session.set_end()
         return self.render_end_response()
 
     def _save_new_page(self):
