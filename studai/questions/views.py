@@ -6,6 +6,7 @@ from logging import getLogger
 from chat.models import Chat
 from quizess.services.test_attempt import TestAtemptServices
 from quizess.services.question_attempt import QuestionAttemptServices
+from quizess.models import QuestionAttempt
 from .forms import AnswerForm
 from .services.sessions import QuestionSessionServices
 from .services.question import QuestionServices
@@ -35,40 +36,45 @@ class ChatQuestionView(AccessMixin, View):
         self.session = QuestionSessionServices(
             request.session, chat_rel_id=chat_related_id, logger=logger
         )
-        self.testAttemptService = TestAtemptServices(self.chat, self.request.user)
-        self._set_attempt(request=request, attemptService=self.testAttemptService)
+        self._get_attempt(request=request)
+        self.questionAttemptService = QuestionAttemptServices(attempt=self.attempt)
 
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request: HttpRequest, chat_related_id: int):
-        if not self.session.active:
-            self._set_session_active()
         if self.session.has_ended:
             return self.render_end_response()
-        self._set_service()
-        self._set_question_attempt(question=self.question)
+        if not self.session.active:
+            self._set_session_active()
+            end = self._set_service()
+            if end:
+                return self.render_end_response()
+            self._save_new_page()
+        else:
+            self._set_attempt_service(
+                current_attempt_id=self.session.current_attempt_id
+            )
+
         form = self.get_form()
         return self.render_response(form=form)
 
     def post(self, request: HttpRequest, chat_related_id: int):
-        # TODO - handle error if new question does not exist
         if not self.session.active:
-            return Http404("Session does not exist")
-        self._set_service()
+            raise Http404("Session does not exist")
+        self._set_attempt_service(current_attempt_id=self.session.current_attempt_id)
         form = self.get_form(data=request.POST)
         if form.is_valid():
             cd = form.cleaned_data
             self.questionAttemptService.set_answer(
-                self.session.current_question_attempt_id, answer=cd["answer"]
+                self.session.current_attempt_id, answer=cd["answer"]
             )
             if self.session.end:
-                res = self.session.end_session()
-                logger.info(f"{res}")
-                return self.render_end_response()
-            self.next_page()
-            self._set_question_attempt(question=self.question)
+                return self.end_test()
+            end = self.next_page()
+            if end:
+                return self.end_test()
+            self._save_new_page()
             form = self.get_form()
-            return self.render_response(form=form)
         return self.render_response(form=form)
 
     def get_context_data(self, service, end: bool, **kwargs):
@@ -86,32 +92,41 @@ class ChatQuestionView(AccessMixin, View):
     def render_end_response(self):
         return HttpResponse("end")
 
-    def _set_service(self):
-        # TODO handle error if the missing questions is the last one(test must end)
-        logger.info("Adding service to self")
+    def _set_service(self) -> bool:
+        """Gets current question, creates QuestionService"""
         try:
             self.question: Question = QuestionServices.get_question(
                 self.queryset, self.session.current_question_id
             )
             self.service = self.question.question_obj
-        except Question.DoesNotExist as e:
+        except Question.DoesNotExist:
             self.session.delete_question(self.session.current_question_id)
-            self._set_service()
-            logger.error(f"{e}")
-        logger.info("Added service to self")
+            if not self.session.end:
+                return self._set_service()
+            return True
+        except IndexError:
+            return True
+        return False
 
-    def _set_attempt(self, request: HttpRequest, attemptService: TestAtemptServices):
+    def _set_attempt_service(self, current_attempt_id: int):
+        """Gets QuestionService from current attempt"""
+        self.service = QuestionAttempt.objects.get(id=current_attempt_id).question_obj
+
+    def _get_attempt(self, request: HttpRequest):
+        """Get or create TestAttempt object"""
+        testAttemptService = TestAtemptServices(self.chat, self.request.user)
         if request.method == "GET" and not self.session.active:
-            self.attempt = attemptService.create()
+            self.attempt = testAttemptService.create()
         else:
-            self.attempt = attemptService.get(self.session.attempt_id)
-        self.questionAttemptService = QuestionAttemptServices(attempt=self.attempt)
+            self.attempt = testAttemptService.get(self.session.attempt_id)
 
-    def _set_question_attempt(self, question: Question):
+    def _create_question_attempt(self, question: Question) -> int:
+        """Creates new QuestionAttempt, returns id"""
         q_attempt = self.questionAttemptService.create_question(question=question)
-        self.session.set_question_attempt_id(q_attempt.id)
+        return q_attempt.id
 
     def _set_session_active(self):
+        """Gets random list of question ids, saves it to session"""
         questions = QuestionServices.get_random_question_ids(
             qs=self.queryset,
         )
@@ -120,11 +135,24 @@ class ChatQuestionView(AccessMixin, View):
         self.session.set_attempt_id(self.attempt.id)
 
     def _set_db_related(self, chat_related_id: int):
+        """Gets chat object and queryset"""
         self.chat = get_object_or_404(
             Chat, related_id=chat_related_id, user=self.request.user
         )
         self.queryset = self.get_queryset(chat_related_id=chat_related_id)
 
-    def next_page(self):
+    def next_page(self) -> bool:
+        """Next page"""
         self.session.next_page()
-        self._set_service()
+        return self._set_service()
+
+    def end_test(self):
+        """Ends test"""
+        res = self.session.end_session()
+        logger.info(f"{res}")
+        return self.render_end_response()
+
+    def _save_new_page(self):
+        """Creates QuestionAttempt and saves id to session"""
+        current_attempt_id = self._create_question_attempt(question=self.question)
+        self.session.set_current_attempt(current_attempt_id)

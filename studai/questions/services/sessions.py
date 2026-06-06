@@ -29,10 +29,6 @@ class QuestionSessionServices:
         self._session = session
         self.chat_rel_id = str(chat_rel_id)
         self.logger = logger
-        if not self._session.get(self.NAMESPACE):
-            self._session[self.NAMESPACE] = {}
-        if not self._session[self.NAMESPACE].get(self.chat_namespace):
-            self._session[self.NAMESPACE][self.chat_namespace] = {}
 
     @property
     def active(self):
@@ -53,11 +49,11 @@ class QuestionSessionServices:
 
     @property
     def current_index(self):
-        return self.session_data.get("current_question_index")
+        return self.session_data["current_question_index"]
 
     @property
-    def session_data(self):
-        return self._session[self.NAMESPACE][self.chat_namespace]
+    def session_data(self) -> dict:
+        return self._session.get(self.NAMESPACE, {}).get(self.chat_namespace, {})
 
     @property
     def questions(self) -> list[int]:
@@ -74,22 +70,16 @@ class QuestionSessionServices:
         return self.questions[self.current_index]
 
     @property
-    def attempts(self) -> dict:
-        if self.session_data.get("attempts") is None:
-            self._create_attempts()
-        return self.session_data["attempts"]
-
-    @property
     def attempt_id(self) -> int:
         return self.session_data["attempt"]
 
     @property
-    def current_question_attempt_id(self) -> int:
-        return self.attempts[str(self.current_question_id)]
+    def attempts(self) -> list[int]:
+        return self.session_data["attempts"]
 
     @property
-    def question_attempt_ids(self) -> set[int]:
-        return set(self.attempts.values())
+    def current_attempt_id(self) -> int | None:
+        return self.session_data.get("current_attempt")
 
     @property
     def has_ended(self) -> bool:
@@ -100,6 +90,10 @@ class QuestionSessionServices:
         self.session_data["questions"] = questions
 
     @modifying
+    def delete_question(self, question_id: int):
+        self.questions.remove(question_id)
+
+    @modifying
     def set_index(self, question_index: int):
         self.session_data["current_question_index"] = question_index
 
@@ -107,11 +101,16 @@ class QuestionSessionServices:
         self._session.pop(self.NAMESPACE, None)
 
     def start_session(self, questions: list):
+        if not self._session.get(self.NAMESPACE):
+            self._session[self.NAMESPACE] = {}
+        if not self._session[self.NAMESPACE].get(self.chat_namespace):
+            self._session[self.NAMESPACE][self.chat_namespace] = {}
         self.set_questions(questions)
+        self._create_attempts()
         self.set_index(0)
 
     def _end(self) -> TestResult:
-        questions = self.question_attempt_ids
+        questions = set(self.attempts)
         correct_answers = set(
             QuestionAttempt.objects.filter(
                 id__in=questions, answer=F("correct_answer_letter")
@@ -135,17 +134,18 @@ class QuestionSessionServices:
         self.session_data["attempt"] = attempt_id
 
     @modifying
-    def set_question_attempt_id(self, question_attempt_id: int):
-        self.attempts[str(self.current_question_id)] = question_attempt_id
+    def _create_attempts(self):
+        self.session_data["attempts"] = []
 
     @modifying
-    def _create_attempts(self):
-        self.session_data["attempts"] = {}
+    def add_attempt(self, attempt_id: int):
+        self.attempts.append(attempt_id)
 
     @modifying
     def set_end(self):
         self.session_data["ended"] = True
 
     @modifying
-    def delete_question(self, question_id:int):
-        self.questions.remove(question_id)
+    def set_current_attempt(self, attempt_id: int):
+        self.session_data["current_attempt"] = attempt_id
+        self.add_attempt(attempt_id=attempt_id)
