@@ -39,10 +39,12 @@ class TestResult(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="results"
     )
+    attempt = models.OneToOneField(
+        TestAtempt, on_delete=models.CASCADE, related_name="result"
+    )
 
 
 class Answer(models.Model):
-
     question = models.OneToOneField(
         QuestionAttempt, on_delete=models.CASCADE, related_name="result"
     )
