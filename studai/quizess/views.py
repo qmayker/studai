@@ -1,21 +1,11 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import DetailView, ListView, View
+from django.views.generic import DetailView, ListView
 from logging import getLogger
 from .services.test_result import TestResultServices
-from .models import TestResult
+from .mixins import ResultViewMixin
 
 # Create your views here.
 
 logger = getLogger(__name__)
-
-
-class ResultViewMixin(LoginRequiredMixin):
-    model = TestResult
-
-    def get_queryset(self: View):
-        queryset = super().get_queryset()
-        queryset = queryset.filter(user=self.request.user)
-        return queryset
 
 
 class ResultDetailView(ResultViewMixin, DetailView):

@@ -1,16 +1,6 @@
 from django.contrib.sessions.backends.base import SessionBase
 from logging import Logger
-from functools import wraps
-
-
-def modifying(func):
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        result = func(self, *args, **kwargs)
-        self._session.modified = True
-        return result
-
-    return wrapper
+from core.decorators import modifying
 
 
 class QuestionSessionServices:

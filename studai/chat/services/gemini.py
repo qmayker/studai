@@ -4,8 +4,8 @@ from celery.app.log import get_logger
 from google import genai
 from google.genai import types
 from logging import Logger
-from pydantic import BaseModel
 from decouple import config
+from core.types import Questions
 from .socket import send_callback
 
 
@@ -46,21 +46,6 @@ FAKE_RESPONSE = {
         },
     ]
 }
-
-
-class Answer(BaseModel):
-    letter: str
-    text: str
-
-
-class Question(BaseModel):
-    question: str
-    answers: list[Answer]
-    correct_answer_letter: str
-
-
-class Questions(BaseModel):
-    questions: list[Question]
 
 
 class GeminiConfig:
