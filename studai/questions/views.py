@@ -1,4 +1,4 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.http import HttpRequest, HttpResponse, Http404
 from django.views.generic import View
 from django.contrib.auth.mixins import AccessMixin
@@ -48,11 +48,8 @@ class ChatQuestionView(AccessMixin, View):
 
     def get(self, request: HttpRequest, chat_related_id: int):
         if self.session.has_ended:
-            result = test_result.TestResultServices.get_by_attempt_id(
-                self.session.attempt_id, user=request.user
-            )
             self.session.clear()
-            return self.render_end_response(object_list=result.get_answers())
+            return redirect(request.path_info)
         if not self.session.active:
             self._set_session_active()
             end = self._set_service()
@@ -173,7 +170,6 @@ class ChatQuestionView(AccessMixin, View):
         return self._set_service()
 
     def end_test(self):
-        # TODO
         """Ends test"""
         object_list = self.attempt_service.get_result(set(self.session.attempts))
         self.session.set_end()
@@ -181,6 +177,7 @@ class ChatQuestionView(AccessMixin, View):
             self.attempt_service.attempt, user=self.request.user
         )
         result.save_answers(object_list)
+        self.session.clear()
         return self.render_end_response(object_list=object_list)
 
     def _save_new_page(self):
