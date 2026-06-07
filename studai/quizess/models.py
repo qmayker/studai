@@ -34,6 +34,9 @@ class QuestionAttempt(models.Model):
             correct_answer_letter=self.correct_answer_letter,
         )
 
+    @property
+    def correct(self):
+        return self.answer == self.correct_answer_letter
 
 class TestResult(models.Model):
     user = models.ForeignKey(
@@ -48,7 +51,7 @@ class Answer(models.Model):
     question = models.OneToOneField(
         QuestionAttempt, on_delete=models.CASCADE, related_name="result"
     )
-    result = models.OneToOneField(
+    result = models.ForeignKey(
         TestResult, on_delete=models.CASCADE, related_name="answers"
     )
     correct = models.BooleanField(default=False)
