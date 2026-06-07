@@ -2,12 +2,12 @@ from django.shortcuts import get_object_or_404, render
 from django.http import HttpRequest, HttpResponse, Http404
 from django.views.generic import View
 from django.contrib.auth.mixins import AccessMixin
-from django.db.models import QuerySet, F
+from django.db.models import QuerySet
 from logging import getLogger
 from chat.models import Chat
 from quizess.services.test_attempt import TestAtemptServices
 from quizess.services.question_attempt import QuestionAttemptServices
-from quizess.services import test_result, answer
+from quizess.services import test_result
 from quizess.models import QuestionAttempt
 from .forms import AnswerForm
 from .services.sessions import QuestionSessionServices
@@ -22,7 +22,7 @@ logger = getLogger(__name__)
 class ChatQuestionView(AccessMixin, View):
     model = Question
     template = "questions/question/detail.html"
-    end_template = "questions/question/end.html"
+    end_template = "quizess/test/detail.html"
 
     def get_queryset(self, chat_related_id: int):
         qs = self.model.objects.all()

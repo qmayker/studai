@@ -25,6 +25,7 @@ urlpatterns = [
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path("api/", include("chat.api.urls", namespace="chat_api")),
     path("questions/", include("questions.urls", namespace="questions")),
+    path("quizess/", include("quizess.urls", namespace="quizess")),
 ]
 
 if settings.DEBUG:

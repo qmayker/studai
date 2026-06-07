@@ -5,6 +5,8 @@ from .querysets import QuestionAttemptQueryset
 
 # Create your models here.
 
+# TODO related_id, names
+
 
 class TestAtempt(models.Model):
     user = models.ForeignKey(
@@ -37,6 +39,7 @@ class QuestionAttempt(models.Model):
     @property
     def correct(self):
         return self.answer == self.correct_answer_letter
+
 
 class TestResult(models.Model):
     user = models.ForeignKey(

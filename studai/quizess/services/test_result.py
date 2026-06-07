@@ -14,8 +14,8 @@ class TestResultServices:
         return TestResultServices(result=result)
 
     @staticmethod
-    def get_by_attempt_id(attempt_id: int, user):
-        result = TestResult.objects.get(attempt_id=attempt_id, user=user)
+    def get_by_id(result_id: int, user):
+        result = TestResult.objects.get(id=result_id, user=user)
         return TestResultServices(result=result)
 
     def save_answers(self, questions: QuerySet[QuestionAttempt]):
