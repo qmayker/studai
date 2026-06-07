@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+
+{% block title %}
+    Test finished.
+{% endblock title  %}
+
+
+{% block content %}
+    <div class="container py-4">
+    <h1>Test Results</h1>
+
+    {% for question in object_list %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">
+                    Question {{ forloop.counter }}
+                </h5>
+
+                <p class="card-text">
+                    {{ question.question_text }}
+                </p>
+
+                <p>
+                    <strong>Your answer:</strong>
+                    {{ question.answer|default:"Not answered" }}
+                </p>
+
+                {% if question.correct %}
+                    <div class="alert alert-success">
+                        ✓ Correct
+                    </div>
+                {% else %}
+                    <div class="alert alert-danger">
+                        ✗ Incorrect
+                        <br>
+                        <strong>Correct answer:</strong>
+                        {{ question.correct_answer_letter }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="alert alert-info">
+            No questions available.
+        </div>
+    {% endfor %}
+</div>
+{% endblock content %}
+    
+    

@@ -1,9 +1,6 @@
 from django.contrib.sessions.backends.base import SessionBase
-
 from logging import Logger
 from functools import wraps
-from typing import NamedTuple
-
 
 
 def modifying(func):
@@ -14,11 +11,6 @@ def modifying(func):
         return result
 
     return wrapper
-
-
-class TestResult(NamedTuple):
-    correct: list[int]
-    wrong: list[int]
 
 
 class QuestionSessionServices:
@@ -108,7 +100,6 @@ class QuestionSessionServices:
         self.set_questions(questions)
         self._create_attempts()
         self.set_index(0)
-
 
     def next_page(self):
         new_index = self.current_index + 1
