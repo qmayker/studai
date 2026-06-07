@@ -54,4 +54,5 @@ class Answer(models.Model):
     result = models.ForeignKey(
         TestResult, on_delete=models.CASCADE, related_name="answers"
     )
+    answer = models.CharField(max_length=1, null=True)
     correct = models.BooleanField(default=False)
