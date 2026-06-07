@@ -42,14 +42,11 @@ class TestResult(models.Model):
 
 
 class Answer(models.Model):
-    class Statuses(models.TextChoices):
-        CO = "Correct"
-        WR = "Wrong"
 
     question = models.OneToOneField(
         QuestionAttempt, on_delete=models.CASCADE, related_name="result"
     )
-    result = models.ForeignKey(
+    result = models.OneToOneField(
         TestResult, on_delete=models.CASCADE, related_name="answers"
     )
-    status = models.CharField(choices=Statuses)
+    correct = models.BooleanField(default=False)
