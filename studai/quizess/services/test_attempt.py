@@ -20,4 +20,4 @@ class TestAtemptServices:
         return TestAtemptServices(attempt=attempt, logger=logger)
 
     def get_result(self, attempts: set[int]) -> QuerySet[QuestionAttempt]:
-        return QuestionAttempt.objects.correct_annotated(attempts)
+        return QuestionAttempt.objects.filter_by_ids(attempts)

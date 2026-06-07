@@ -1,11 +1,6 @@
-from django.db.models import QuerySet, F, Case, When, Value
+from django.db.models import QuerySet
 
 
 class QuestionAttemptQueryset(QuerySet):
-    def correct_annotated(self, questions: list[int]):
-        return self.filter(id__in=questions).annotate(
-            correct=Case(
-                When(answer=F("correct_answer_letter"), then=Value(True)),
-                default=Value(False),
-            )
-        )
+    def filter_by_ids(self, question_ids: list[int]):
+        return self.filter(id__in=question_ids)
