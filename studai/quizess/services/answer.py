@@ -10,6 +10,11 @@ class AnswerServices:
         answers = []
         for question in questions:
             answers.append(
-                Answer(question=question, result=self.result, correct=question.correct)
+                Answer(
+                    question=question,
+                    result=self.result,
+                    correct=question.correct,
+                    answer=question.answer,
+                )
             )
         Answer.objects.bulk_create(objs=answers)
