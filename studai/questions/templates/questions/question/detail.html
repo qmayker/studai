@@ -13,14 +13,15 @@
         <form method="post">{% csrf_token %} 
             {{form.as_p}}
             {{end}}
+            <input type="hidden" value="{{attempt_id}}" name="attempt_id">
             {% if end %}
-                <div id="answerButton">
+                <div id="endButton" >
                     <input type="hidden" value="True" name="end">
                     <button type="submit">Finish test</button> 
                     
                 </div>
             {% else %}
-                <div id="endButton">
+                <div id="answerButton">
                     <input type="hidden" value="False" name="end">
                     <button type="submit">Next</button>  
                 </div>

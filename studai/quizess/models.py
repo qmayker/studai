@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from questions.services.question import QuestionServices
 from .querysets import QuestionAttemptQueryset
+from core.fields import RelatedIDField
 
 # Create your models here.
 
@@ -15,6 +16,7 @@ class TestAtempt(models.Model):
     chat = models.ForeignKey(
         "chat.Chat", on_delete=models.CASCADE, related_name="attempts"
     )
+    related_id = RelatedIDField()
 
 
 class QuestionAttempt(models.Model):

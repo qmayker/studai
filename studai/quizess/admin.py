@@ -17,6 +17,7 @@ class AnswerInline(NonEditableInlineMixin, admin.TabularInline):
 class TestAtemptAdmin(admin.ModelAdmin):
     list_display = ["user", "chat"]
     inlines = [QuestionAttemptInline]
+    readonly_fields = ("related_id",)
 
 
 @admin.register(TestResult)
