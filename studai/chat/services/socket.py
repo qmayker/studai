@@ -1,4 +1,4 @@
-import channels
+from channels.layers import get_channel_layer
 from celery import shared_task
 from asgiref.sync import async_to_sync
 
@@ -12,7 +12,7 @@ class WebSocketServices:
 @shared_task()
 def send_callback(result, chat_id: int | str):
     group_name = WebSocketServices.get_group_name(chat_id)
-    channel_layer = channels.layers.get_channel_layer()
+    channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
         group_name, {"type": "chat.message", "is_ready": True}
     )
