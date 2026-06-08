@@ -5,10 +5,12 @@ from django.views.generic import View
 from django.contrib.auth.mixins import AccessMixin
 from django.contrib import messages
 from logging import getLogger
+from redis_lock import Lock
+from core.redis import RedisClient
 from chat.models import Chat
 from quizess.services.test_attempt import TestAtemptServices
 from quizess.services.question_attempt import QuestionAttemptServices
-from quizess.services import test_result
+from quizess.services.test_result import TestResultServices
 from quizess.models import QuestionAttempt
 from quizess.forms import AttemptForm
 from .forms import AnswerForm
@@ -41,6 +43,7 @@ class ChatQuestionView(AccessMixin, View):
         self.session = QuestionSessionServices(
             request.session, chat_rel_id=chat_related_id, logger=logger
         )
+        self.redis_client = RedisClient()
         self.attempt_service = self._get_attempt_service(request=request)
         self.question_attempt_service = QuestionAttemptServices(
             attempt=self.attempt_service.attempt
@@ -50,7 +53,6 @@ class ChatQuestionView(AccessMixin, View):
 
     def get(self, request: HttpRequest, chat_related_id: int):
         if self.session.has_ended:
-            self.session.clear()
             return self._restart_session()
         if not self.session.active:
             self._set_session_active()
@@ -69,35 +71,27 @@ class ChatQuestionView(AccessMixin, View):
         )
 
     def post(self, request: HttpRequest, chat_related_id: int):
-        if not self.session.active:
-            raise Http404("Session does not exist")
-        attempt_form = AttemptForm(data=request.POST)
-        if attempt_form.is_valid():
-            cd = attempt_form.cleaned_data
-            attempt_related_id = cd["attempt_id"]
-            if self._check_result_exist(attempt_related_id=attempt_related_id):
-                result_service = test_result.TestResultServices.get_by_attempt_id(
-                    attempt_related_id=attempt_related_id, user=request.user
-                )
-                messages.info(request, "This test already has been finished")
-                return self.render_end_response(result_id=result_service.result.id)
-        else:
-            raise Http404()
-
-        self._set_attempt_service(current_attempt_id=self.session.current_attempt_id)
-        form = self.get_form(data=request.POST)
-        if form.is_valid():
-            cd = form.cleaned_data
-            self.question_attempt_service.set_answer(
-                self.session.current_attempt_id, answer=cd["answer"]
+        self._check_session()
+        attempt_related_id = self._validate_attempt_form(request.POST)
+        with Lock(
+            **self.redis_client.test_result_kwargs(
+                user_id=request.user.id, attempt_related_id=attempt_related_id
             )
-            if self.session.end:
-                return self.end_test()
-            end = self.next_page()
-            if end:
-                return self.end_test()
-            self._save_new_page()
-            form = self.get_form()
+        ):
+            if self._check_result_exist(attempt_related_id=attempt_related_id):
+                return self._redirect_to_other_result(
+                    attempt_related_id=attempt_related_id
+                )
+
+            self._set_attempt_service(
+                current_attempt_id=self.session.current_attempt_id
+            )
+            form = self.get_form(data=request.POST)
+            if form.is_valid():
+                end = self._validate_answer_form(form=form)
+                if end:
+                    return self.end_test()
+                form = self.get_form()
         return self.render_response(form=form, attempt_id=attempt_related_id)
 
     def get_context_data(self, service, end: bool, **kwargs):
@@ -180,7 +174,7 @@ class ChatQuestionView(AccessMixin, View):
         """Ends test"""
         object_list = self.attempt_service.get_result(set(self.session.attempts))
         self.session.set_end()
-        result = test_result.TestResultServices.create(
+        result = TestResultServices.create(
             self.attempt_service.attempt, user=self.request.user
         )
         result.save_answers(object_list)
@@ -196,6 +190,41 @@ class ChatQuestionView(AccessMixin, View):
         return redirect(self.request.path_info)
 
     def _check_result_exist(self, attempt_related_id: int):
-        return test_result.TestResultServices.exists(
+        return TestResultServices.exists(
             attempt_related_id=attempt_related_id, user=self.request.user
         )
+
+    def _validate_attempt_form(self, data: dict) -> int:
+        """Validates form and returns related_id"""
+        attempt_form = AttemptForm(data=data)
+        if not attempt_form.is_valid():
+            raise Http404()
+        cd = attempt_form.cleaned_data
+        return cd["attempt_id"]
+
+    def _check_session(self):
+        """Checks if session is active or not, raises error"""
+        if not self.session.active:
+            raise Http404("Session does not exist")
+
+    def _validate_answer_form(self, form: AnswerForm) -> bool:
+        """Saves user answer, if the test must end returns True else False"""
+        cd = form.cleaned_data
+        self.question_attempt_service.set_answer(
+            self.session.current_attempt_id, answer=cd["answer"]
+        )
+        if self.session.end:
+            return True
+        end = self.next_page()
+        if end:
+            return True
+        self._save_new_page()
+        return False
+
+    def _redirect_to_other_result(self, attempt_related_id: int):
+        """Gets TestResultService by attempt_related_id, redirects to attempt`s result"""
+        result_service = TestResultServices.get_by_attempt_id(
+            attempt_related_id=attempt_related_id, user=self.request.user
+        )
+        messages.info(self.request, "This test already has been finished")
+        return self.render_end_response(result_id=result_service.result.id)
