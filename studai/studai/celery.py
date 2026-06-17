@@ -25,7 +25,6 @@ def generate_questions(chat_id: int, user_id: int):
     chunks = agent.divide_into_chunks(
         "LLM models are large language models that can understand and generate human-like text based on the input they receive. They are trained on vast amounts of data and use deep learning techniques to learn patterns in language. LLMs can be used for various applications, such as chatbots, content generation, and language translation."
     )
-    logger.info(f"{chunks}")
     # TODO fix lock
     with Lock(
         **redis_service.question_generating_kwargs(chat_id=chat_id, user_id=user_id)

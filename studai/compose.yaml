@@ -7,6 +7,8 @@ services:
       - .:/app/
     env_file:
       - .env
+    depends_on:
+      - redis
   celery:
     build: .
     command: celery -A studai worker --loglevel=info
@@ -14,6 +16,8 @@ services:
       - .:/app/
     env_file:
       - .env
+    depends_on:
+      - redis
   redis:
       image: "redis:alpine"
       ports:

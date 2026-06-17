@@ -1,6 +1,6 @@
 from collections.abc import Generator
 from celery import chord, shared_task
-from celery.app.log import get_logger
+from time import sleep
 from google import genai
 from google.genai import types
 from logging import Logger
@@ -113,9 +113,9 @@ class GeminiAgent:
 def process_chunk(chunk: str, chat_id: int):
     from questions.models import Question as QuestionModel
 
-    logger = get_logger(__name__)
-    agent = GeminiAgent(config=GeminiConfig.get_config(), logger=logger)
+    agent = GeminiAgent(config=GeminiConfig.get_config())
     response = agent._generate_question(text=chunk)
+    sleep(5)
     questions = response.questions
     questions_objects = []
     for question in questions:
@@ -129,4 +129,3 @@ def process_chunk(chunk: str, chat_id: int):
             )
         )
     QuestionModel.objects.bulk_create(questions_objects)
-    # TODO - save response to db and send to ws
