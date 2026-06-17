@@ -1,6 +1,5 @@
+import asyncio
 from collections.abc import Generator
-from celery import chord, shared_task
-from time import sleep
 from google import genai
 from google.genai import types
 from logging import Logger
@@ -79,9 +78,7 @@ class GeminiConfig:
 class GeminiAgent:
     CHUNKS_SIZE = 1000
 
-    def __init__(
-        self, config: types.GenerateContentConfig, logger: Logger | None = None
-    ):
+    def __init__(self, config: types.GenerateContentConfig, logger: Logger):
         self.config = config
         self.logger = logger
         self.client = self.get_client()
@@ -98,12 +95,22 @@ class GeminiAgent:
             yield text[i : i + GeminiAgent.CHUNKS_SIZE]
 
     def generate_tasks(self, chunks: Generator[str, None, None], chat_id: int):
-        tasks = []
-        for chunk in chunks:
-            if self.logger:
-                self.logger.info(f"Processing chunk: {chunk[:50]}...")
-            tasks.append(process_chunk.s(chunk, chat_id=chat_id))
-        chord(tasks)(send_callback.s(chat_id=chat_id))
+        questions = asyncio.run(self._generate_tasks(chunks=chunks))
+        self.save_questions(questions=questions, chat_id=chat_id)
+
+        send_callback.delay([], chat_id)
+
+    async def _generate_tasks(
+        self, chunks: Generator[str, None, None]
+    ) -> list[Questions]:
+        async with asyncio.TaskGroup() as tg:
+            tasks: list[asyncio.Task] = []
+            for chunk in chunks:
+                tasks.append(
+                    tg.create_task(asyncio.to_thread(self._generate_question, chunk))
+                )
+        questions = [task.result() for task in tasks]
+        return questions
 
     def _generate_question(self, text: str) -> Questions:
         # response = self.client.models.generate_content(
@@ -113,24 +120,19 @@ class GeminiAgent:
         text_response = FAKE_RESPONSE  # temporary
         return Questions.model_validate(text_response)
 
-
-@shared_task
-def process_chunk(chunk: str, chat_id: int):
-    from questions.models import Question as QuestionModel
-
-    agent = GeminiAgent(config=GeminiConfig.get_config())
-    response = agent._generate_question(text=chunk)
-    sleep(5)
-    questions = response.questions
-    questions_objects = []
-    for question in questions:
-        answers = question.model_dump()["answers"]
-        questions_objects.append(
-            QuestionModel(
-                chat_id=chat_id,
-                question_text=question.question,
-                correct_answer_letter=question.correct_answer_letter,
-                options=answers,
+    @staticmethod
+    def save_questions(questions: list, chat_id: int):
+        # TODO - test, remove socket task
+        from questions.models import Question
+        question_objects = []
+        for question in questions:
+            answers = question.model_dump()["answers"]
+            question_objects.append(
+                Question(
+                    chat_id=chat_id,
+                    question_text=question.question,
+                    correct_answer_letter=question.correct_answer_letter,
+                    options=answers,
+                )
             )
-        )
-    QuestionModel.objects.bulk_create(questions_objects)
+        question_objects.objects.bulk_create(question_objects)
