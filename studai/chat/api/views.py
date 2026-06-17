@@ -38,7 +38,7 @@ class ChatViewSet(ViewSet):
     @action(detail=True, methods=["get"])
     def generate_questions(self, request: Request, pk=None):
         self.check_permission(pk, request.user)
-        generate_questions.delay(pk)
+        generate_questions.delay(pk, request.user.id)
         return Response({"status": "ok"})
 
     @action(detail=True, methods=["get"])

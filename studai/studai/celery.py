@@ -1,8 +1,9 @@
 import os
-import channels.layers
 from celery import Celery
 from celery.app.log import get_logger
-from chat.services.gemini import GeminiAgent, GeminiConfig
+from redis_lock import Lock
+from core.gemini import Gemini
+from core.redis import RedisService
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "studai.settings")
 
@@ -11,13 +12,24 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
 logger = get_logger(__name__)
+redis_service = RedisService()
 
 
 @app.task()
-def generate_questions(chat_id: int):
-    agent = GeminiAgent(config=GeminiConfig.get_config(), logger=logger)
+def generate_questions(chat_id: int, user_id: int):
+    # TODO - possible race condition
+    from chat.services.chat import ChatServices
+
+    agent = Gemini.get_agent(logger=logger)
 
     chunks = agent.divide_into_chunks(
         "LLM models are large language models that can understand and generate human-like text based on the input they receive. They are trained on vast amounts of data and use deep learning techniques to learn patterns in language. LLMs can be used for various applications, such as chatbots, content generation, and language translation."
     )
-    agent.generate_tasks(chunks, chat_id=chat_id)
+    logger.info(f"{chunks}")
+    # TODO fix lock
+    with Lock(
+        **redis_service.question_generating_kwargs(chat_id=chat_id, user_id=user_id)
+    ):
+        logger.info(f"Chat {chat_id} User {user_id} started generating questions")
+        ChatServices.delete_chat_questions(chat_id=chat_id)
+        agent.generate_tasks(chunks, chat_id=chat_id)
