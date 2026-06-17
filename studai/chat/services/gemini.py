@@ -106,7 +106,12 @@ class GeminiAgent:
         chord(tasks)(send_callback.s(chat_id=chat_id))
 
     def _generate_question(self, text: str) -> Questions:
-        return Questions.model_validate(FAKE_RESPONSE)
+        # response = self.client.models.generate_content(
+        #     contents=text, model="gemini-3.5-flash"
+        # )
+        # text_response = response.text
+        text_response = FAKE_RESPONSE  # temporary
+        return Questions.model_validate(text_response)
 
 
 @shared_task
