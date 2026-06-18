@@ -6,7 +6,6 @@ from google.genai import types
 from logging import Logger
 from decouple import config
 from core.types import Questions, Question, answers_serializer
-from .socket import send_callback
 
 
 FAKE_RESPONSE = {
@@ -95,11 +94,13 @@ class GeminiAgent:
         for i in range(0, len(text), GeminiAgent.CHUNKS_SIZE):
             yield text[i : i + GeminiAgent.CHUNKS_SIZE]
 
-    def generate_tasks(self, chunks: Generator[str, None, None], chat_id: int):
+    def generate_tasks(
+        self,
+        chunks: Generator[str, None, None],
+        chat_id: int,
+    ):
         questions = asyncio.run(self._generate_tasks(chunks=chunks))
         self.save_questions(questions=questions, chat_id=chat_id)
-
-        send_callback.delay([], chat_id)
 
     async def _generate_tasks(
         self, chunks: Generator[str, None, None]
@@ -126,7 +127,6 @@ class GeminiAgent:
         return Questions.model_validate(text_response).questions
 
     def save_questions(self, questions: list[Question], chat_id: int):
-        # TODO - test, remove socket task
         from questions.models import Question as QuestionModel
 
         question_objects = []
