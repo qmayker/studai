@@ -33,3 +33,4 @@ def generate_questions(chat_id: int, user_id: int):
         logger.info(f"Chat {chat_id} User {user_id} started generating questions")
         ChatServices.delete_chat_questions(chat_id=chat_id)
         agent.generate_tasks(chunks, chat_id=chat_id)
+        logger.info(f"Chat {chat_id} User {user_id} finished generating questions")

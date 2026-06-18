@@ -1,10 +1,11 @@
 import asyncio
 from collections.abc import Generator
+from time import sleep
 from google import genai
 from google.genai import types
 from logging import Logger
 from decouple import config
-from core.types import Questions
+from core.types import Questions, Question, answers_serializer
 from .socket import send_callback
 
 
@@ -102,37 +103,41 @@ class GeminiAgent:
 
     async def _generate_tasks(
         self, chunks: Generator[str, None, None]
-    ) -> list[Questions]:
+    ) -> list[Question]:
         async with asyncio.TaskGroup() as tg:
             tasks: list[asyncio.Task] = []
             for chunk in chunks:
                 tasks.append(
                     tg.create_task(asyncio.to_thread(self._generate_question, chunk))
                 )
-        questions = [task.result() for task in tasks]
+        questions = []
+        for task in tasks:
+            result = task.result()
+            questions += result
         return questions
 
-    def _generate_question(self, text: str) -> Questions:
+    def _generate_question(self, text: str) -> list[Question]:
         # response = self.client.models.generate_content(
-        #     contents=text, model="gemini-3.5-flash"
+        #     contents=text, model="gemini-3.5-flash", config=self.config
         # )
         # text_response = response.text
         text_response = FAKE_RESPONSE  # temporary
-        return Questions.model_validate(text_response)
+        sleep(10)
+        return Questions.model_validate(text_response).questions
 
-    @staticmethod
-    def save_questions(questions: list, chat_id: int):
+    def save_questions(self, questions: list[Question], chat_id: int):
         # TODO - test, remove socket task
-        from questions.models import Question
+        from questions.models import Question as QuestionModel
+
         question_objects = []
         for question in questions:
-            answers = question.model_dump()["answers"]
+            answers = answers_serializer(question.answers)
             question_objects.append(
-                Question(
+                QuestionModel(
                     chat_id=chat_id,
                     question_text=question.question,
                     correct_answer_letter=question.correct_answer_letter,
                     options=answers,
                 )
             )
-        question_objects.objects.bulk_create(question_objects)
+        QuestionModel.objects.bulk_create(question_objects)
