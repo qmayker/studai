@@ -1,4 +1,5 @@
 import asyncio
+import json
 from collections.abc import Generator
 from time import sleep
 from google import genai
@@ -118,13 +119,14 @@ class GeminiAgent:
         return questions
 
     def _generate_question(self, text: str) -> list[Question]:
-        # response = self.client.models.generate_content(
-        #     contents=text, model="gemini-3.5-flash", config=self.config
-        # )
-        # text_response = response.text
-        text_response = FAKE_RESPONSE  # temporary
-        sleep(10)
-        return Questions.model_validate(text_response).questions
+        response = self.client.models.generate_content(
+            contents=text, model="gemini-3.5-flash", config=self.config
+        )
+        text_response = response.text
+        dict_response = json.loads(text_response)
+        # dict_response = FAKE_RESPONSE  # temporary
+        # sleep(10)
+        return Questions.model_validate(dict_response).questions
 
     def save_questions(self, questions: list[Question], chat_id: int):
         from questions.models import Question as QuestionModel
