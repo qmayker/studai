@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
 from questions.admin import QuestionInline
-from .models import Chat, Content, TextItem
+from .models import Chat, Content, TextItem, ImageItem
 
 # Register your models here.
 
@@ -40,4 +40,11 @@ class TextAdmin(admin.ModelAdmin):
     list_display = ("id", "created", "text_content")
     list_filter = ("created",)
     search_fields = ("text_content",)
+    inlines = [ContentGenericInline]
+
+
+@admin.register(ImageItem)
+class ImageAdmin(admin.ModelAdmin):
+    list_display = ("id", "created", "image_content")
+    list_filter = (("created"),)
     inlines = [ContentGenericInline]

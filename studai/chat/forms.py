@@ -11,5 +11,3 @@ class TextContentForm(forms.ModelForm):
                 attrs={"rows": 3, "placeholder": "Type your text here..."}
             ),
         }
-
-
