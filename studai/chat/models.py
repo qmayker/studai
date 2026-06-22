@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from core.fields import RelatedIDField
+from core.fields import RelatedIDField, get_path
 
 # Create your models here.
 
@@ -59,6 +59,19 @@ class ItemBase(models.Model):
 
 class TextItem(ItemBase):
     text_content = models.TextField()
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="texts"
+    )
 
     def get_content(self):
         return self.text_content
+
+
+class ImageItem(ItemBase):
+    image_content = models.ImageField(upload_to=get_path)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="images"
+    )
+
+    def get_content(self):
+        return self.image_content

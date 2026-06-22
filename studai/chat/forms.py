@@ -8,6 +8,8 @@ class TextContentForm(forms.ModelForm):
         fields = ["text_content"]
         widgets = {
             "text_content": forms.Textarea(
-                attrs={"rows": 3, "placeholder": "Type your message here..."}
+                attrs={"rows": 3, "placeholder": "Type your text here..."}
             ),
         }
+
+

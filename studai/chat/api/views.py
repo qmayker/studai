@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from chat.models import Chat
-from chat.services.content import TextContentServices
+from chat.services.text_content import TextContentServices
 from studai.celery import generate_questions
 from .serializers import ContentSerializer
 

@@ -1,7 +1,8 @@
 from django.db.transaction import atomic
 from rest_framework.exceptions import ValidationError
 from chat.models import Content, TextItem, Chat
-    
+
+
 class TextContentServices:
     @staticmethod
     @atomic
@@ -17,4 +18,6 @@ class TextContentServices:
                 {"status": "not created", "message": "text_content can`t be empty"}
             )
         return text_content
-    
+
+
+
