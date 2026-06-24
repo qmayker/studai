@@ -1,5 +1,6 @@
 from django import forms
-from .models import TextItem
+from core.fields import MultipleFileField
+from .models import TextItem, ImageItem
 
 
 class TextContentForm(forms.ModelForm):
@@ -11,3 +12,9 @@ class TextContentForm(forms.ModelForm):
                 attrs={"rows": 3, "placeholder": "Type your text here..."}
             ),
         }
+
+
+class ImageContentForm(forms.Form):
+    image_content = MultipleFileField()
+    template_name_div = 'chat/form/image_content.html'
+

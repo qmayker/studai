@@ -2,9 +2,10 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
+from django.forms.formsets import formset_factory
 from logging import getLogger
 from .models import Chat
-from .forms import TextContentForm
+from .forms import TextContentForm, ImageContentForm
 
 # Create your views here.
 
@@ -37,12 +38,18 @@ class ChatListView(LoginRequiredMixin, RelatedIDChatViewMixin, ListView):
 
 class ChatDetailView(LoginRequiredMixin, RelatedIDChatViewMixin, DetailView):
     template_name = "chat/chat/detail.html"
+    image_form = ImageContentForm
+    text_form = TextContentForm
 
-    def _get_message_form(self):
-        return TextContentForm()
+    def _get_text_form(self):
+        return self.text_form()
+
+    def _get_image_form(self):
+        return self.image_form
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["contents"] = self.object.contents.all()
-        context["form"] = self._get_message_form()
+        context["form"] = self._get_text_form()
+        context["image_form"] = self._get_image_form()
         return context

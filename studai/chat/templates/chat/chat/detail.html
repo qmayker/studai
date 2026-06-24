@@ -22,6 +22,7 @@
         <form>
             {% csrf_token %}
             {{ form.as_p }}
+            {{image_form.as_div}}
             <div class="send-button" data-url="{% url 'chat_api:chat-save-content' object.id %}">
                 <button type="submit">Send</button>
             </div>
@@ -40,8 +41,9 @@
 {% endblock content %}
 
 {% block scripts %}
-    <script src="{% static 'js/send_button.js' %}"></script>
+    <script src="{% static 'js/send_button.js' %}" type="module"></script>
     <script src="{% static 'js/generate_button.js' %}"></script>
     <script src="{% static 'js/socket.js' %}"></script>
     <script src="{% static 'js/materials.js' %}"></script>
+    <script src="{% static 'js/upload.js' %}" type="module"></script>
 {% endblock scripts %}
