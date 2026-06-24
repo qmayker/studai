@@ -1,3 +1,23 @@
+import { getFiles } from "./upload.js";
+
+function addTextElement(textContent){
+    const messageArea = document.getElementById("materials");
+    const newMessage = document.createElement("p");
+    if (messageArea.dataset.status === "shown"){
+        newMessage.textContent = textContent;
+        messageArea.appendChild(newMessage);
+    }
+}
+
+function getFormData(textContent, files){
+    const formData = new FormData()
+        formData.append('text_content', textContent);
+        files.forEach(file =>{
+            formData.append('files', file)
+    })
+    return formData
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     let sendButton = document.querySelector(".send-button");
     let textArea = document.getElementById("id_text_content");
@@ -8,18 +28,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     sendButton.addEventListener('click', (e)=>{
         e.preventDefault();
-        const textArea = document.getElementById("id_text_content");
         const textContent = textArea.value;
         textArea.value = "";
-
-        const messageArea = document.getElementById("materials");
-        const newMessage = document.createElement("p");
-        console.log(messageArea.dataset.status)
-        if (messageArea.dataset.status === "shown"){
-            newMessage.textContent = textContent;
-            messageArea.appendChild(newMessage);
-        }
-        data.body = JSON.stringify({"text_content": textContent});
+        const formData = getFormData(textContent, getFiles());
+        addTextElement(textContent);
+        data.body = FormData;
         fetch(url, data);
     });
 
