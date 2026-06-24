@@ -72,6 +72,7 @@ class ImageItem(ItemBase):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="images"
     )
+    description = models.TextField()
 
     def get_content(self):
         return self.image_content
