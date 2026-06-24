@@ -4,20 +4,19 @@ from chat.models import Content, TextItem, Chat
 
 
 class TextContentServices:
-    @staticmethod
+    def __init__(self, text_content: str):
+        self.text_content = text_content
+
     @atomic
-    def save_text_content(text_content: str, chat: Chat):
-        text_item = TextItem.objects.create(text_content=text_content)
+    def save_text_content(self, chat: Chat, user):
+        text_item = TextItem.objects.create(text_content=self.text_content, user=user)
         Content.objects.create(chat=chat, content_object=text_item)
 
-    @staticmethod
-    def get_text_content(data: dict):
+    @classmethod
+    def get_service(cls, data: dict):
         text_content = data.get("text_content")
         if not text_content:
             raise ValidationError(
                 {"status": "not created", "message": "text_content can`t be empty"}
             )
-        return text_content
-
-
-
+        return cls(text_content=text_content)

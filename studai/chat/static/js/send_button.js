@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const csrfToken = Cookies.get('csrftoken');
     const apiUrl = sendButton.dataset.url;
     const url = new URL(apiUrl, window.location.origin);
-    const data = {'method':'POST', 'headers': {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}};
+    const data = {'method':'POST', 'headers': {'X-CSRFToken': csrfToken}};
 
     sendButton.addEventListener('click', (e)=>{
         e.preventDefault();
@@ -32,8 +32,16 @@ document.addEventListener("DOMContentLoaded", function () {
         textArea.value = "";
         const formData = getFormData(textContent, getFiles());
         addTextElement(textContent);
-        data.body = FormData;
-        fetch(url, data);
+        data.body = formData;
+        fetch(url, data).then(async response => {
+            const text = await response.json();
+            if (!response.ok) {
+                throw new Error(text);
+            }
+            return text;
+        }).catch(error => {
+            console.error("Error:", error);
+        });
     });
 
 

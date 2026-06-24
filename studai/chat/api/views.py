@@ -6,18 +6,21 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import MultiPartParser, FormParser
 from chat.models import Chat
 from chat.services.text_content import TextContentServices
 from studai.celery import generate_questions
 from .serializers import ContentSerializer
 
-# TODO - business logic to services
 
 logger = logging.getLogger(__name__)
+
+# TODO - fix api error(post does not work)
 
 
 class ChatViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self, user):
         queryset = Chat.objects.filter(user=user)
@@ -28,11 +31,16 @@ class ChatViewSet(ViewSet):
         if not qs.exists():
             raise PermissionDenied()
 
+    def _save_text_content(self, request: Request, chat: Chat):
+        self.text_service = TextContentServices.get_service(request.data)
+        self.text_service.save_text_content(chat=chat, user=request.user)
+
     @action(detail=True, methods=["post"])
     def save_content(self, request: Request, pk=None):
-        text_content = TextContentServices.get_text_content(request.data)
+        logger.info(f"Saving content for {request.user} chat id: {pk}")
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
-        TextContentServices.save_text_content(chat=chat, text_content=text_content)
+        self._save_text_content(request=request, chat=chat)
+
         return Response({"status": "created"})
 
     @action(detail=True, methods=["get"])
