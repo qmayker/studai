@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", (e)=>{
     })
 })
 
-export function getFiles(){
+export function getImages(){
     let copiedFiles = files.slice()
     files.length = 0
     return copiedFiles

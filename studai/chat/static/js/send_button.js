@@ -1,4 +1,4 @@
-import { getFiles } from "./upload.js";
+import { getImages } from "./upload.js";
 
 function addTextElement(textContent){
     const messageArea = document.getElementById("materials");
@@ -9,11 +9,11 @@ function addTextElement(textContent){
     }
 }
 
-function getFormData(textContent, files){
+function getFormData(textContent, images){
     const formData = new FormData()
         formData.append('text_content', textContent);
-        files.forEach(file =>{
-            formData.append('files', file)
+        images.forEach(image =>{
+            formData.append('image_content', image)
     })
     return formData
 }
@@ -29,8 +29,13 @@ document.addEventListener("DOMContentLoaded", function () {
     sendButton.addEventListener('click', (e)=>{
         e.preventDefault();
         const textContent = textArea.value;
+        const images = getImages()
         textArea.value = "";
-        const formData = getFormData(textContent, getFiles());
+        if(!textContent.trim() && !images.length){
+            alert("Enter a message or upload an image")
+            return
+        }
+        const formData = getFormData(textContent, images);
         addTextElement(textContent);
         data.body = formData;
         fetch(url, data).then(async response => {

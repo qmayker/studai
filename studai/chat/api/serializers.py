@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework.fields import SerializerMethodField
-from chat.models import Content
+from chat.models import Content, TextItem, ImageItem
 
 
 class ContentSerializer(ModelSerializer):
@@ -13,6 +13,18 @@ class ContentSerializer(ModelSerializer):
 
     def get_content(self, obj: Content):
         return obj.get_content()
-    
-    def get_item_type(self, obj:Content):
+
+    def get_item_type(self, obj: Content):
         return obj.get_item_type()
+
+
+class TextSerializer(ModelSerializer):
+    class Meta:
+        model = TextItem
+        fields = ["text_content"]
+
+
+class ImageSerializer(ModelSerializer):
+    class Meta:
+        model = ImageItem
+        fields = ["image_content"]
