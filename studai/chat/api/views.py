@@ -9,6 +9,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser, FormParser
 from chat.models import Chat
 from chat.services.text_content import TextContentServices
+from chat.services.image_content import ImageContentServices
 from studai.celery import generate_questions
 from .serializers import ContentSerializer
 
@@ -32,15 +33,28 @@ class ChatViewSet(ViewSet):
             raise PermissionDenied()
 
     def _save_text_content(self, request: Request, chat: Chat):
-        self.text_service = TextContentServices.get_service(request.data)
-        self.text_service.save_text_content(chat=chat, user=request.user)
+        text_service = TextContentServices.get_service(request.data)
+        if not text_service:
+            return
+        text_service.save_text_content(chat=chat, user=request.user)
+        return text_service
+
+    def _save_image_content(self, request: Request, chat: Chat):
+        image_service = ImageContentServices.get_service(request.FILES)
+        if not image_service:
+            return
+        image_service.save_image_content(user=request.user, chat=chat)
+        return image_service
+
+    def save_contents(self, request: Request, chat: Chat):
+        self._save_text_content(request=request, chat=chat)
+        self._save_image_content(request=request, chat=chat)
 
     @action(detail=True, methods=["post"])
     def save_content(self, request: Request, pk=None):
         logger.info(f"Saving content for {request.user} chat id: {pk}")
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
-        self._save_text_content(request=request, chat=chat)
-
+        self.save_contents(request=request, chat=chat)
         return Response({"status": "created"})
 
     @action(detail=True, methods=["get"])

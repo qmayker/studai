@@ -16,7 +16,5 @@ class TextContentServices:
     def get_service(cls, data: dict):
         text_content = data.get("text_content")
         if not text_content:
-            raise ValidationError(
-                {"status": "not created", "message": "text_content can`t be empty"}
-            )
+            return
         return cls(text_content=text_content)
