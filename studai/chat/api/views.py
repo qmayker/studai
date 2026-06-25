@@ -67,4 +67,5 @@ class ChatViewSet(ViewSet):
     def get_contents(self, request: Request, pk=None):
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
         serializer = ContentSerializer(chat.contents.all(), many=True)
+        logger.info(f"{serializer.data}")
         return Response(serializer.data)

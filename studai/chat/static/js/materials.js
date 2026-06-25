@@ -16,7 +16,12 @@ document.addEventListener('DOMContentLoaded', e=>{
                 const fragment = document.createDocumentFragment()
                 data.forEach(element => {
                     let p = document.createElement('p');
-                    p.innerText = element.content;
+                    if(element.item_type==='text'){
+                        p.innerText = element.content;
+                    } else {
+                        p.innerHTML = element.content;
+                    }
+                    
                     fragment.appendChild(p);
                 });
                 materials.appendChild(fragment);
