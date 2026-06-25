@@ -44,6 +44,11 @@ class Content(models.Model):
     )
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created"]
+        indexes = [models.Index(fields=["created"])]
 
     def get_content(self):
         return self.content_object.get_content()
@@ -65,9 +70,13 @@ class ItemBase(models.Model):
 
 
 class TextItem(ItemBase):
-    text_content = models.TextField()
+    text_content = models.TextField(
+        blank=True,
+    )
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="texts"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="texts",
     )
 
     def get_content(self):
