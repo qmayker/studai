@@ -22,6 +22,7 @@ class Chat(models.Model):
         indexes = [
             models.Index(fields=["created"]),
             models.Index(fields=["related_id", "user"]),
+            models.Index(fields=["id", "user"]),
         ]
 
     def get_absolute_url(self):
@@ -92,6 +93,9 @@ class ImageItem(ItemBase):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="images"
     )
     description = models.TextField(default="")
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "id"])]
 
     def get_content(self):
         image_name = basename(self.image_content.name)
