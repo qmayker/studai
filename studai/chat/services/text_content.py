@@ -1,5 +1,4 @@
 from django.db.transaction import atomic
-from rest_framework.exceptions import ValidationError
 from logging import getLogger
 from chat.api.serializers import TextSerializer
 from chat.models import Content, TextItem, Chat

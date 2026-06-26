@@ -50,8 +50,9 @@ class ChatViewSet(ViewSet):
         logger.info(f"Saving content for {request.user} chat id: {pk}")
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
         service = self.get_content_service(request=request, chat=chat)
-        service.save()
-        return Response({"status": "created"})
+        contents = service.save()
+        serializer = ContentSerializer(contents, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=["get"])
     def generate_questions(self, request: Request, pk=None):
@@ -63,5 +64,4 @@ class ChatViewSet(ViewSet):
     def get_contents(self, request: Request, pk=None):
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
         serializer = ContentSerializer(chat.contents.all(), many=True)
-        logger.info(f"{serializer.data}")
         return Response(serializer.data)

@@ -1,3 +1,18 @@
+export function showMaterials(materials, data){
+    const fragment = document.createDocumentFragment()
+    data.forEach(element => {
+        let p = document.createElement('p');
+        if(element.item_type==='text'){
+            p.innerText = element.content;
+        } else {
+            p.innerHTML = element.content;
+        }
+        
+        fragment.appendChild(p);
+    });
+    materials.appendChild(fragment);
+}
+
 document.addEventListener('DOMContentLoaded', e=>{
     const materials = document.getElementById("materials")
     const materialsButton = document.getElementById("materials-button");
@@ -10,23 +25,12 @@ document.addEventListener('DOMContentLoaded', e=>{
             materials.innerHTML = "";
         } else{
             materials.dataset.status = 'shown'
-            fetch(url).then((response) =>{
-                return response.json()
-            }).then((data)=>{
-                const fragment = document.createDocumentFragment()
-                data.forEach(element => {
-                    let p = document.createElement('p');
-                    if(element.item_type==='text'){
-                        p.innerText = element.content;
-                    } else {
-                        p.innerHTML = element.content;
-                    }
-                    
-                    fragment.appendChild(p);
-                });
-                materials.appendChild(fragment);
+            fetch(url)
+            .then(response =>{return response.json()})
+            .then(data => {
+                console.log(data); 
+                showMaterials(materials, data)
             })
-            
         }
         e.preventDefault();
     })

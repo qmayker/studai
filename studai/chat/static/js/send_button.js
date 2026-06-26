@@ -1,13 +1,6 @@
 import { getImages } from "./upload.js";
+import { showMaterials } from "./materials.js";
 
-function addTextElement(textContent){
-    const messageArea = document.getElementById("materials");
-    const newMessage = document.createElement("p");
-    if (messageArea.dataset.status === "shown"){
-        newMessage.textContent = textContent;
-        messageArea.appendChild(newMessage);
-    }
-}
 
 function getFormData(textContent, images){
     const formData = new FormData()
@@ -25,6 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const apiUrl = sendButton.dataset.url;
     const url = new URL(apiUrl, window.location.origin);
     const data = {'method':'POST', 'headers': {'X-CSRFToken': csrfToken}};
+    const materials = document.getElementById("materials");
 
     sendButton.addEventListener('click', (e)=>{
         e.preventDefault();
@@ -36,24 +30,17 @@ document.addEventListener("DOMContentLoaded", function () {
             return
         }
         const formData = getFormData(textContent, images);
-        addTextElement(textContent);
         data.body = formData;
-        fetch(url, data).then(async response => {
-            const text = await response.json();
-            if (!response.ok) {
-                throw new Error(text);
+        fetch(url, data).then(response => response.json()).then(
+            data => {
+                showMaterials(materials, data)
             }
-            return text;
-        }).catch(error => {
-            console.error("Error:", error);
-        });
-    });
-
+        )})
 
     textArea.addEventListener('keypress', (e)=>{
         if(e.key === "Enter"){
             e.preventDefault();
             sendButton.click();
         }});
-
+        
     });
