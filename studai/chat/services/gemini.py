@@ -54,6 +54,20 @@ class GeminiConfig:
     Do not use information from outside of the provided text. Generate 5 questions with 4 answer options for each question.
     The answer options should be labeled with letters A, B, C, D. Provide the correct answer letter for each question. 
     """
+    IMAGE_INSTRUCTION = """
+    Ти — експерт з аналізу навчальних матеріалів. Проаналізуй зображення та витягни всю інформацію, 
+    яка може знадобитися для створення тестів. Не описуй оформлення, кольори або розташування елементів, 
+    якщо вони не мають навчального значення.\n\nПоверни результат у структурованому вигляді:\n\n1. 
+    Основна тема зображення.\n2. Усі ключові поняття та їх визначення.\n3. 
+    Усі факти, правила, закони, властивості та твердження.\n4. Усі формули, позначення та пояснення змінних.\n5.
+    Усі етапи процесів, алгоритмів або послідовностей дій.\n6. Усі зв’язки між об’єктами 
+    (причина-наслідок, порівняння, залежності, класифікації).\n7. Усі числові значення, дати, одиниці вимірювання 
+    та важливі характеристики.\n8. Якщо є таблиці — перепиши всі рядки, стовпці та їхній зміст.\n9. Якщо є діаграми, 
+    схеми або графіки — поясни, що вони показують і які висновки з них можна зробити.\n10. Переліч усі терміни, які 
+    зустрічаються на зображенні.\n11. Вкажи нечіткі, погано читані або неоднозначні елементи.\n\nГоловна мета — 
+    отримати максимум навчальної інформації, яку можна використати для генерації тестових питань з однією правильною відповіддю. 
+    Не додавай інформацію, якої немає на зображенні.
+    """
 
     @staticmethod
     def api_key():
@@ -75,14 +89,22 @@ class GeminiConfig:
             response_schema=cls.response_format(),
         )
 
+    @classmethod
+    def get_image_config(self):
+        return {"type": "text", "text": self.IMAGE_INSTRUCTION}
+
 
 class GeminiAgent:
     CHUNKS_SIZE = 1000
 
-    def __init__(self, config: types.GenerateContentConfig, logger: Logger):
+    def __init__(
+        self, config: types.GenerateContentConfig, image_config: dict, logger: Logger
+    ):
         self.config = config
+        self.image_config = image_config
         self.logger = logger
         self.client = self.get_client()
+        self.model = "gemini-3.5-flash"
         if logger:
             self.logger.debug(f"Initialized GeminiAgent with config: {self.config}")
 
@@ -120,7 +142,7 @@ class GeminiAgent:
 
     def _generate_question(self, text: str) -> list[Question]:
         response = self.client.models.generate_content(
-            contents=text, model="gemini-3.5-flash", config=self.config
+            contents=text, model=self.model, config=self.config
         )
         text_response = response.text
         dict_response = json.loads(text_response)
@@ -129,6 +151,7 @@ class GeminiAgent:
         return Questions.model_validate(dict_response).questions
 
     def save_questions(self, questions: list[Question], chat_id: int):
+        # TODO - move to service
         from questions.models import Question as QuestionModel
 
         question_objects = []
@@ -143,3 +166,14 @@ class GeminiAgent:
                 )
             )
         QuestionModel.objects.bulk_create(question_objects)
+
+    def generate_image_description(self, image_path: str) -> str:
+        image = self.client.files.upload(file=image_path)
+        interation = self.client.interactions.create(
+            model=self.model,
+            input=[
+                self.image_config,
+                {"type": "image", "uri": image.uri, "mime_type": image.mime_type},
+            ],
+        )
+        return interation.output_text

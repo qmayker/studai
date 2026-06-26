@@ -17,8 +17,6 @@ from .serializers import ContentSerializer
 
 logger = logging.getLogger(__name__)
 
-# TODO - fix api error(post does not work)
-
 
 class ChatViewSet(ViewSet):
     permission_classes = [IsAuthenticated]

@@ -46,6 +46,7 @@ class Content(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
     created = models.DateTimeField(auto_now_add=True)
+    batch_id = models.UUIDField(db_index=True)
 
     class Meta:
         ordering = ["created"]

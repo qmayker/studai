@@ -7,6 +7,7 @@ from core.gemini import Gemini
 from core.redis import RedisService
 from core.socket import WebSocketServices
 
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "studai.settings")
 
 app = Celery("studai")
@@ -35,3 +36,15 @@ def generate_questions(chat_id: int, user_id: int):
         agent.generate_tasks(chunks, chat_id=chat_id)
         logger.info(f"Chat {chat_id} User {user_id} finished generating questions")
         socket_service.send_callback()
+
+
+@app.task()
+def generate_image_description(image_id: int, user_id: int):
+    from chat.services.image_item import ImageItemServices
+
+    agent = Gemini.get_agent(logger=logger)
+    image_item = ImageItemServices(user_id=user_id, image_id=image_id)
+    description = agent.generate_image_description(image_path=image_item.path)
+    image_item.add_description(
+        description=description,
+    )
