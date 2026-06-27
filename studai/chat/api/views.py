@@ -45,7 +45,6 @@ class ChatViewSet(ViewSet):
 
     @action(detail=True, methods=["post"])
     def save_content(self, request: Request, pk=None):
-        logger.info(f"Saving content for {request.user} chat id: {pk}")
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
         service = self.get_content_service(request=request, chat=chat)
         contents = service.save()

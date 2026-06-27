@@ -1,15 +1,13 @@
 import redis
-from studai.settings import CELERY_BROKER_URL
 
 
 class RedisService:
-    r = None
+    def __init__(self, url: str):
+        self.url = url
 
     @property
     def redis(self) -> redis.Redis:
-        if not self.r:
-            self.r = redis.from_url(CELERY_BROKER_URL)
-        return self.r
+        return redis.from_url(self.url)
 
     @property
     def test_result_key(self) -> str:
@@ -33,6 +31,13 @@ class RedisService:
 
     def question_generating_kwargs(self, user_id: int, chat_id: int) -> dict:
         return self._get_kwargs(user_id, chat_id, name=self.question_generating_key)
+
+    @property
+    def description_key(self) -> str:
+        return "description:generating"
+
+    def description_kwargs(self, user_id: int):
+        return self._get_kwargs(user_id, name=self.description_key)
 
     def _add_args(self, name: str, *args):
         for arg in args:
