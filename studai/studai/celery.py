@@ -73,5 +73,5 @@ def generate_descriptions(image_ids: list[int], user_id: int, chat_id: int):
     lock.acquire()
     chord(
         (generate_description.s(image_id, user_id) for image_id in image_ids),
-        send_description_callback.s(user_id=user_id, lock_id=lock.id),
+        send_description_callback.s(user_id=user_id, lock_id=lock.id, chat_id=chat_id),
     )()

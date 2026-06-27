@@ -1,11 +1,9 @@
-import asyncio
 from time import sleep
 from logging import getLogger
 from pyrate_limiter import Limiter
 from chat.services.gemini import GeminiAgent
 from core.gemini import Gemini
 from chat.models import ImageItem
-from core.asyncio import AsyncioClient
 
 logger = getLogger(__name__)
 
