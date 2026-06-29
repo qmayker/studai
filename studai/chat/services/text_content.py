@@ -13,9 +13,9 @@ class TextContentServices:
         self.text_content = text_content
 
     @atomic
-    def save_text_content(self, chat: Chat, user) -> Content:
+    def save_text_content(self, chat: Chat, user, batch_id) -> Content:
         text_item = TextItem.objects.create(text_content=self.text_content, user=user)
-        return Content.objects.create(chat=chat, content_object=text_item)
+        return Content.objects.create(chat=chat, content_object=text_item, batch_id=batch_id)
 
     @classmethod
     def get_service(cls, data):

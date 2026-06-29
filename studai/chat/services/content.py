@@ -1,3 +1,4 @@
+import uuid
 from django.db.transaction import atomic
 from rest_framework.exceptions import ValidationError
 from chat.models import Chat, Content
@@ -19,12 +20,18 @@ class ContentServices:
         self.user = user
 
     @atomic
-    def _save_contents(self):
+    def _save_contents(self, batch_id: uuid.UUID):
         contents = []
         if self.image.images:
-            contents += self.image.save_image_content(user=self.user, chat=self.chat)
+            contents += self.image.save_image_content(
+                user=self.user, chat=self.chat, batch_id=batch_id
+            )
         if self.text.text_content.strip():
-            contents.append(self.text.save_text_content(user=self.user, chat=self.chat))
+            contents.append(
+                self.text.save_text_content(
+                    user=self.user, chat=self.chat, batch_id=batch_id
+                )
+            )
         return contents
 
     def validate_contents(self):
@@ -33,4 +40,5 @@ class ContentServices:
 
     def save(self) -> list[Content]:
         self.validate_contents()
-        return self._save_contents()
+        batch_id = uuid.uuid4()
+        return self._save_contents(batch_id=batch_id)

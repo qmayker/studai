@@ -3,7 +3,6 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.transaction import atomic, on_commit
 from django.contrib.contenttypes.models import ContentType
 from logging import getLogger
-from chat.types import Contents
 from chat.api.serializers import ImageSerializer
 from chat.models import ImageItem, Content, Chat
 
@@ -28,28 +27,32 @@ class ImageContentServices:
         return cls(serializer.validated_data)
 
     @atomic
-    def save_image_content(self, user, chat: Chat) -> list[Content]:
+    def save_image_content(
+        self, user, chat: Chat, batch_id: uuid.UUID
+    ) -> list[Content]:
         from studai.celery import generate_descriptions
 
-        images = [self.model(**image, user=user) for image in self.images]
+        images = [
+            self.model(**image, user=user, description=None) for image in self.images
+        ]
         created_images = self.model.objects.bulk_create(images)
+        contents = self._create_contents(
+            created_images=created_images, chat=chat, batch_id=batch_id
+        )
+        created_contents = Content.objects.bulk_create(contents)
 
-        contents = self._create_contents(created_images=created_images, chat=chat)
-        created_contents = Content.objects.bulk_create(contents.contents)
-
-        def send_celery(image_ids: list[int]):
+        def send_celery():
             logger.info("Starting celery task")
-            generate_descriptions.delay(image_ids=image_ids, user_id=user.id, chat_id=chat.id)
+            generate_descriptions.delay(user_id=user.id, chat_id=chat.id)
 
-        on_commit(lambda: send_celery(image_ids=contents.image_ids))
+        on_commit(lambda: send_celery())
         return created_contents
 
-    def _create_contents(self, created_images: list[ImageItem], chat: Chat) -> Contents:
+    def _create_contents(
+        self, created_images: list[ImageItem], chat: Chat, batch_id: uuid.UUID
+    ) -> list[Content]:
         contents = []
-        image_ids = []
-        batch_id = uuid.uuid4()
         for image in created_images:
-            image_ids.append(image.id)
             contents.append(
                 Content(
                     chat=chat,
@@ -58,4 +61,4 @@ class ImageContentServices:
                     batch_id=batch_id,
                 )
             )
-        return Contents(contents=contents, image_ids=image_ids)
+        return contents
