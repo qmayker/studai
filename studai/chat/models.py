@@ -5,6 +5,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.html import format_html
 from os.path import basename
 from core.fields import RelatedIDField, get_path
+from .types import Status
+from .querysets import ImageItemQuerySet
 
 # Create your models here.
 
@@ -93,7 +95,9 @@ class ImageItem(ItemBase):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="images"
     )
-    description = models.TextField(default="")
+    description = models.TextField(null=True, blank=True)
+    status = models.CharField(choices=Status.choices, default=Status.PENDING)
+    objects = ImageItemQuerySet.as_manager()
 
     class Meta:
         indexes = [models.Index(fields=["user", "id"])]

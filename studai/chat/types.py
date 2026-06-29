@@ -1,7 +1,8 @@
-from typing import NamedTuple
-from .models import Content
+from django.db.models import TextChoices
 
 
-class Contents(NamedTuple):
-    contents: list[Content]
-    image_ids: list[int]
+class Status(TextChoices):
+    PENDING = "PN"
+    PROCESSING = "PR"
+    FINISHED = "FN"
+    FAILED = "FL"

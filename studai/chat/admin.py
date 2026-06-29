@@ -45,6 +45,6 @@ class TextAdmin(admin.ModelAdmin):
 
 @admin.register(ImageItem)
 class ImageAdmin(admin.ModelAdmin):
-    list_display = ("id", "created", "image_content")
-    list_filter = (("created"),)
+    list_display = ("id", "created", "image_content", "status")
+    list_filter = ("created", "status")
     inlines = [ContentGenericInline]
