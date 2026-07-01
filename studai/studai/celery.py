@@ -85,7 +85,7 @@ def send_description_callback(
 
 
 @app.task()
-def generate_descriptions(user_id: int, chat_id: int):
+def generate_descriptions(user_id: int, chat_id: int, channel_id: str):
     from chat.services.image_item import ImageDescriptionServices
 
     lock = Lock(**redis_service.description_kwargs(user_id=user_id, chat_id=chat_id))

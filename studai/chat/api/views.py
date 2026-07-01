@@ -8,8 +8,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser, FormParser
 from chat.models import Chat
-from chat.services.text_content import TextContentServices
-from chat.services.image_content import ImageContentServices
+from chat.services.contents import (
+    TextContentServices,
+    ImageContentServices,
+)
 from chat.services.content import ContentServices
 from studai.celery import generate_questions
 from .serializers import ContentSerializer
@@ -31,24 +33,17 @@ class ChatViewSet(ViewSet):
         if not qs.exists():
             raise PermissionDenied()
 
-    def get_content_service(self, request: Request, chat: Chat):
-        text_service = TextContentServices.get_service(data=request.data)
-        image_service = ImageContentServices.get_service(
-            images=request.FILES.getlist("image_content")
-        )
-        return ContentServices(
-            image_service=image_service,
-            text_service=text_service,
-            chat=chat,
-            user=request.user,
-        )
-
     @action(detail=True, methods=["post"])
     def save_content(self, request: Request, pk=None):
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
-        service = self.get_content_service(request=request, chat=chat)
-        contents = service.save()
-        serializer = ContentSerializer(contents, many=True)
+        data = ContentServices.validate_contents(request)
+        service = ContentServices(
+            *self._get_services(data=data, chat=chat, user=request.user),
+            socket_id=data.get("socket_id"),
+        )
+        saved_contents = service.save()
+        serializer = ContentSerializer(saved_contents, many=True)
+
         return Response(serializer.data)
 
     @action(detail=True, methods=["get"])
@@ -62,3 +57,16 @@ class ChatViewSet(ViewSet):
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
         serializer = ContentSerializer(chat.contents.all(), many=True)
         return Response(serializer.data)
+
+    def _get_services(self, data: dict, chat: Chat, user):
+        return (
+            ImageContentServices(
+                images=data.get("image"),
+                user=user,
+                chat=chat,
+                socket_id=data.get("socket_id"),
+            ),
+            TextContentServices(
+                text_content=data.get("text").get("text_content"), user=user, chat=chat
+            ),
+        )

@@ -1,44 +1,47 @@
 import uuid
 from django.db.transaction import atomic
-from rest_framework.exceptions import ValidationError
-from chat.models import Chat, Content
-from .image_content import ImageContentServices
-from .text_content import TextContentServices
+from logging import getLogger
+from chat.models import Content
+from chat.api.serializers import ContentsSerializer
+from .contents import BasicContentService, ImageContentServices
+
+logger = getLogger(__name__)
 
 
 class ContentServices:
     def __init__(
         self,
-        image_service: ImageContentServices,
-        text_service: TextContentServices,
-        chat: Chat,
-        user,
+        *services: BasicContentService,
+        socket_id: str,
     ):
-        self.image = image_service
-        self.text = text_service
-        self.chat = chat
-        self.user = user
+        self.services = services
+        self.socket_id = socket_id
 
     @atomic
     def _save_contents(self, batch_id: uuid.UUID):
         contents = []
-        if self.image.images:
-            contents += self.image.save_image_content(
-                user=self.user, chat=self.chat, batch_id=batch_id
-            )
-        if self.text.text_content.strip():
-            contents.append(
-                self.text.save_text_content(
-                    user=self.user, chat=self.chat, batch_id=batch_id
-                )
-            )
+        for service in self.services:
+            if not service.exists:
+                continue
+            logger.info(f"Saving content for service: {service.__class__.__name__}")
+            contents += service.save_content(batch_id=batch_id)
         return contents
 
-    def validate_contents(self):
-        if not self.image.images and not self.text.text_content.strip():
-            raise ValidationError("Images and Text can not be empty at the same time")
-
     def save(self) -> list[Content]:
-        self.validate_contents()
         batch_id = uuid.uuid4()
         return self._save_contents(batch_id=batch_id)
+
+    @staticmethod
+    def validate_contents(request):
+        image_data = ImageContentServices.get_data(
+            images=request.FILES.getlist("image_content")
+        )
+        serializer = ContentsSerializer(
+            data={
+                "text": request.data,
+                "image": image_data,
+                "socket_id": request.data.get("socket_id"),
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        return serializer.validated_data
