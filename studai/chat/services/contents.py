@@ -56,7 +56,7 @@ class ImageContentServices(BasicContentService):
         from studai.celery import generate_descriptions
 
         images = [
-            self.model(**image, user=self.user, description=None)
+            self.model(**image, user=self.user, description=None, chat=self.chat)
             for image in self.images
         ]
         created_images = self.model.objects.bulk_create(images)
@@ -107,7 +107,7 @@ class TextContentServices(BasicContentService):
     @atomic
     def save_content(self, batch_id: uuid.UUID) -> list[Content]:
         text_item = TextItem.objects.create(
-            text_content=self.text_content, user=self.user
+            text_content=self.text_content, user=self.user, chat=self.chat
         )
         return [
             Content.objects.create(
