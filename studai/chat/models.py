@@ -82,6 +82,7 @@ class TextItem(ItemBase):
         on_delete=models.CASCADE,
         related_name="texts",
     )
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="texts")
 
     def get_content(self):
         return self.text_content
@@ -95,12 +96,16 @@ class ImageItem(ItemBase):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="images"
     )
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="images")
     description = models.TextField(null=True, blank=True)
     status = models.CharField(choices=Status.choices, default=Status.PENDING)
     objects = ImageItemQuerySet.as_manager()
 
     class Meta:
-        indexes = [models.Index(fields=["user", "id"])]
+        indexes = [
+            models.Index(fields=["user", "id"]),
+            models.Index(fields=["status", "user", "chat"]),
+        ]
 
     def get_content(self):
         image_name = basename(self.image_content.name)
