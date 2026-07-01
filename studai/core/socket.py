@@ -18,19 +18,20 @@ class WebSocketServices:
             group_name, {"type": "chat.message", "is_ready": True}
         )
 
-    def button_locked(self):
-        async_to_sync(self.layer.group_send)(
-            self.group_name, {"type": "chat.message", "button-locked": True}
+    def button_locked(self, channel_id: str):
+        async_to_sync(self.layer.send)(
+            channel=channel_id, message={"type": "chat.message", "button-locked": True}
         )
 
-    def button_running(self):
-        async_to_sync(self.layer.group_send)(
-            self.group_name, {"type": "chat.message", "button-locked": False}
+    def button_running(self, channel_id: str):
+        async_to_sync(self.layer.send)(
+            channel=channel_id, message={"type": "chat.message", "button-locked": False}
         )
 
-    def button_finished(self):
-        async_to_sync(self.layer.group_send)(
-            self.group_name, {"type": "chat.message", "button-finished": True}
+    def button_finished(self, channel_id: str):
+        async_to_sync(self.layer.send)(
+            channel=channel_id,
+            message={"type": "chat.message", "button-finished": True},
         )
 
     def image_error(self, image_id: int):

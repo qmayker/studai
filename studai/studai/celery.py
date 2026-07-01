@@ -9,6 +9,7 @@ from core.redis import RedisService
 from core.socket import WebSocketServices
 from core.limiter import LimiterClient
 from django.conf import settings
+from chat.types import Status
 
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "studai.settings")
@@ -47,53 +48,72 @@ def generate_questions(chat_id: int, user_id: int):
 def generate_description(image_id: int, user_id: int, chat_id: int, lock_id: str):
     from chat.services.image_item import ImageDescriptionServices
 
-    description = ImageDescriptionServices(
+    service = ImageDescriptionServices(
         image_id=image_id,
         user_id=user_id,
         limiter=limiter_client.get_limiter(limiter_client.get_key(user_id=user_id)),
     )
     try:
-        description.add_description()
-        return image_id
+        description = service.get_description()
+        return {
+            image_id: {
+                "description": description,
+                "status": "success",
+            }
+        }
     except Exception:
-        qs = description.get_processing(user_id=user_id, chat_id=chat_id).filter(
-            id=image_id
-        )
-        qs.set_failed()
-        socket = WebSocketServices(chat_id=chat_id)
-        socket.image_error(image_id=image_id)
-        return None
+        return {image_id: {"description": None, "status": "failed"}}
 
 
 @app.task()
 def send_description_callback(
-    result: list[int], user_id: int, lock_id: str, chat_id: int
+    result: list[dict[int, dict]],
+    user_id: int,
+    lock_id: str,
+    chat_id: int,
+    channel_id: str,
 ):
     # TODO - add generate-button lock for user
-    from chat.services.image_item import ImageDescriptionServices
+    from chat.models import ImageItem
 
     lock = Lock(
         **redis_service.description_kwargs(user_id=user_id, chat_id=chat_id), id=lock_id
     )
     socket = WebSocketServices(chat_id=chat_id)
-    qs = ImageDescriptionServices.get_processing(
-        user_id=user_id, chat_id=chat_id
-    ).filter(id__in=result)
-    qs.set_finished()
-    socket.button_finished()
-    lock.release()
+    logger.info(f"Result {result}")
+    images = []
+    for image_data in result:
+        image_id, data = list(image_data.items())[0]
+        if data["status"] == "failed":
+            images.append(ImageItem(id=image_id, status=Status.FAILED))
+            socket.image_error(image_id=image_id)
+            continue
+        images.append(
+            ImageItem(
+                id=image_id, description=data["description"], status=Status.FINISHED
+            )
+        )
+    try:
+        ImageItem.objects.bulk_update(images, fields=["description", "status"])
+        socket.button_finished(channel_id=channel_id)
+    except Exception as e:
+        logger.error(f"Error occurred while sending description callback: {e}")
+    finally:
+        lock.release()
 
 
 @app.task()
 def generate_descriptions(user_id: int, chat_id: int, channel_id: str):
     from chat.services.image_item import ImageDescriptionServices
 
+    # TODO - pass ids to celery task instead of querying the database again
+
     lock = Lock(**redis_service.description_kwargs(user_id=user_id, chat_id=chat_id))
     socket = WebSocketServices(chat_id=chat_id)
     if not lock.acquire(blocking=False):
-        socket.button_locked()
+        socket.button_locked(channel_id=channel_id)
         return
-    socket.button_running()
+    socket.button_running(channel_id=channel_id)
 
     qs = ImageDescriptionServices.get_pending(user_id=user_id, chat_id=chat_id)
     image_ids = list(qs.values_list("id", flat=True))
@@ -110,6 +130,8 @@ def generate_descriptions(user_id: int, chat_id: int, channel_id: str):
             )
             for image_id in image_ids
         ),
-        send_description_callback.s(user_id=user_id, lock_id=lock.id, chat_id=chat_id),
+        send_description_callback.s(
+            user_id=user_id, lock_id=lock.id, chat_id=chat_id, channel_id=channel_id
+        ),
     )
     workflow()

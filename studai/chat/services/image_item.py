@@ -18,8 +18,8 @@ class ImageItemServices:
 
     @property
     def path(self) -> str:
-        image = self.model.objects.get(id=self.image_id, user_id=self.user_id)
-        return image.image_content.path
+        self.image = self.model.objects.get(id=self.image_id, user_id=self.user_id)
+        return self.image.image_content.path
 
     def add_description(self, description: str):
         return self.model.objects.filter(id=self.image_id, user_id=self.user_id).update(
@@ -33,6 +33,9 @@ class ImageDescriptionServices:
     def __init__(self, image_id: int, user_id: int, limiter: Limiter):
         self.image_id = image_id
         self.user_id = user_id
+        self.image_item = ImageItemServices(
+            user_id=self.user_id, image_id=self.image_id
+        )
         self.limiter = limiter
 
     def _get_description(self, agent: GeminiAgent, image_item: ImageItemServices):
@@ -42,17 +45,12 @@ class ImageDescriptionServices:
         sleep(5)
         return description
 
-    def add_description(self) -> str:
+    def get_description(self) -> str:
         self.limiter.try_acquire(name="requests")
         agent = Gemini.get_agent(logger=logger)
-        image_item = ImageItemServices(user_id=self.user_id, image_id=self.image_id)
-        description = self._get_description(agent=agent, image_item=image_item)
-        return image_item.add_description(description=description)
+        description = self._get_description(agent=agent, image_item=self.image_item)
+        return description
 
     @classmethod
     def get_pending(cls, user_id: int, chat_id: int) -> QuerySet[ImageItem]:
         return cls.model.objects.pending(user_id, chat_id)
-
-    @classmethod
-    def get_processing(cls, user_id: int, chat_id: int) -> QuerySet[ImageItem]:
-        return cls.model.objects.processing(user_id, chat_id)
