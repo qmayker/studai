@@ -1,3 +1,4 @@
+from django.db.models import QuerySet
 from time import sleep
 from logging import getLogger
 from pyrate_limiter import Limiter
@@ -38,12 +39,20 @@ class ImageDescriptionServices:
         logger.info(f"Get description for image with id={image_item.image_id}")
         # description = agent.generate_image_description(image_path=image_item.path)
         description = f"SOME TEXT {image_item.path}"  # temprorary
-        image_item.add_description(description=description)
         sleep(5)
         return description
 
-    def get_description(self) -> str:
+    def add_description(self) -> str:
         self.limiter.try_acquire(name="requests")
         agent = Gemini.get_agent(logger=logger)
         image_item = ImageItemServices(user_id=self.user_id, image_id=self.image_id)
-        return self._get_description(agent=agent, image_item=image_item)
+        description = self._get_description(agent=agent, image_item=image_item)
+        return image_item.add_description(description=description)
+
+    @classmethod
+    def get_pending(cls, user_id: int, chat_id: int) -> QuerySet[ImageItem]:
+        return cls.model.objects.pending(user_id, chat_id)
+
+    @classmethod
+    def get_processing(cls, user_id: int, chat_id: int) -> QuerySet[ImageItem]:
+        return cls.model.objects.processing(user_id, chat_id)

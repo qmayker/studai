@@ -1,10 +1,12 @@
 import { getImages } from "./upload.js";
 import { showMaterials } from "./materials.js";
+import { socketPromise } from "./socket.js";
 
 
-function getFormData(textContent, images){
+function getFormData(textContent, images, socketID){
     const formData = new FormData()
         formData.append('text_content', textContent);
+        formData.append('socket_id', socketID)
         images.forEach(image =>{
             formData.append('image_content', image)
     })
@@ -29,13 +31,16 @@ document.addEventListener("DOMContentLoaded", function () {
             alert("Enter a message or upload an image")
             return
         }
-        const formData = getFormData(textContent, images);
-        data.body = formData;
-        fetch(url, data).then(response => response.json()).then(
-            data => {
-                showMaterials(materials, data)
-            }
-        )})
+        socketPromise.then((value) => {
+            console.log(value)
+            const formData = getFormData(textContent, images, value);
+            data.body = formData;
+            fetch(url, data).then(response => response.json()).then(
+                data => {
+                    showMaterials(materials, data)
+                }
+            )})
+        })  
 
     textArea.addEventListener('keypress', (e)=>{
         if(e.key === "Enter"){

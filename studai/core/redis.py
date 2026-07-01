@@ -36,8 +36,8 @@ class RedisService:
     def description_key(self) -> str:
         return "description:generating"
 
-    def description_kwargs(self, user_id: int):
-        return self._get_kwargs(user_id, name=self.description_key)
+    def description_kwargs(self, user_id: int, chat_id: int):
+        return self._get_kwargs(user_id, chat_id, name=self.description_key)
 
     def _add_args(self, name: str, *args):
         for arg in args:
