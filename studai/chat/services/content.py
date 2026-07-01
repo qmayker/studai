@@ -23,7 +23,6 @@ class ContentServices:
         for service in self.services:
             if not service.exists:
                 continue
-            logger.info(f"Saving content for service: {service.__class__.__name__}")
             contents += service.save_content(batch_id=batch_id)
         return contents
 

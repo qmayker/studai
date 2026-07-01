@@ -117,7 +117,6 @@ class TextContentServices(BasicContentService):
 
     @property
     def exists(self) -> bool:
-        logger.info(f"Checking if text content exists: {self.text_content.strip()}")
         return bool(self.text_content.strip())
 
     def __str__(self) -> str:
