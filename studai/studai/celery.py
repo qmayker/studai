@@ -16,6 +16,7 @@ app = Celery("studai")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
+from . import celery_signals
 
 logger = get_task_logger(__name__)
 redis_service = RedisService(url=settings.CELERY_BROKER_URL)

@@ -43,3 +43,10 @@ class RedisService:
         for arg in args:
             name = f"{name}:{arg}"
         return name
+    
+    def task_restoring_kwargs(self):
+        return self._get_kwargs(name=self.restoring_key)
+    
+    @property
+    def restoring_key(self):
+        return "task-restoring"
