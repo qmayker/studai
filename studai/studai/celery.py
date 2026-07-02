@@ -102,10 +102,10 @@ def send_description_callback(
 
 
 @app.task()
-def generate_descriptions(user_id: int, chat_id: int, channel_id: str):
+def generate_descriptions(
+    image_ids: list[int], user_id: int, chat_id: int, channel_id: str
+):
     from chat.services.image_item import ImageDescriptionServices
-
-    # TODO - pass ids to celery task instead of querying the database again
 
     lock = Lock(**redis_service.description_kwargs(user_id=user_id, chat_id=chat_id))
     socket = WebSocketServices(chat_id=chat_id)
@@ -114,8 +114,9 @@ def generate_descriptions(user_id: int, chat_id: int, channel_id: str):
         return
     socket.button_running(channel_id=channel_id)
 
-    qs = ImageDescriptionServices.get_pending(user_id=user_id, chat_id=chat_id)
-    image_ids = list(qs.values_list("id", flat=True))
+    qs = ImageDescriptionServices.get_pending(user_id=user_id, chat_id=chat_id).filter(
+        id__in=image_ids
+    )
     qs.set_processing()
 
     logger.info(

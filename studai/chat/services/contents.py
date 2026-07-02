@@ -4,6 +4,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.transaction import atomic, on_commit
 from django.contrib.contenttypes.models import ContentType
 from logging import getLogger
+from chat.types.content import ImageContents
 from chat.models import ImageItem, Content, Chat, TextItem
 
 logger = getLogger(__name__)
@@ -56,12 +57,15 @@ class ImageContentServices(BasicContentService):
         contents = self._create_contents(
             created_images=created_images, chat=self.chat, batch_id=batch_id
         )
-        created_contents = Content.objects.bulk_create(contents)
+        created_contents = Content.objects.bulk_create(contents.contents)
 
         def send_celery():
             logger.info("Starting celery task")
             generate_descriptions.delay(
-                user_id=self.user.id, chat_id=self.chat.id, channel_id=self.socket_id
+                image_ids=contents.image_ids,
+                user_id=self.user.id,
+                chat_id=self.chat.id,
+                channel_id=self.socket_id,
             )
 
         on_commit(lambda: send_celery())
@@ -69,8 +73,9 @@ class ImageContentServices(BasicContentService):
 
     def _create_contents(
         self, created_images: list[ImageItem], chat: Chat, batch_id: uuid.UUID
-    ) -> list[Content]:
+    ) -> ImageContents:
         contents = []
+        image_ids = []
         for image in created_images:
             contents.append(
                 Content(
@@ -80,7 +85,8 @@ class ImageContentServices(BasicContentService):
                     batch_id=batch_id,
                 )
             )
-        return contents
+            image_ids.append(image.id)
+        return ImageContents(contents=contents, image_ids=image_ids)
 
     @property
     def exists(self) -> bool:
