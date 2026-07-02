@@ -1,6 +1,4 @@
 import os
-import asyncio
-
 from celery import Celery, chord
 from celery.utils.log import get_task_logger
 from redis_lock import Lock
@@ -9,7 +7,7 @@ from core.redis import RedisService
 from core.socket import WebSocketServices
 from core.limiter import LimiterClient
 from django.conf import settings
-from chat.types import Status
+from chat.types.db import Status
 
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "studai.settings")

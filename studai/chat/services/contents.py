@@ -44,13 +44,6 @@ class ImageContentServices(BasicContentService):
         self.socket_id = socket_id
         super().__init__(user=user, chat=chat)
 
-    @classmethod
-    def get_data(cls, images: list[dict[str, InMemoryUploadedFile]]):
-        data = []
-        for image in images:
-            data.append({"image_content": image})
-        return data
-
     @atomic
     def save_content(self, batch_id: uuid.UUID) -> list[Content]:
         from studai.celery import generate_descriptions

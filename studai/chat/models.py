@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.html import format_html
 from os.path import basename
 from core.fields import RelatedIDField, get_path
-from .types import Status
+from .types.db import Status
 from .querysets import ImageItemQuerySet
 
 # Create your models here.

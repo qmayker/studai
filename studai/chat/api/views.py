@@ -12,7 +12,10 @@ from chat.services.contents import (
     TextContentServices,
     ImageContentServices,
 )
-from chat.services.content import ContentServices
+from chat.services.content import ContentServices, ContentValidator
+from chat.services.serializer_fields import SocketIdField, TextField, ImageField
+from chat.services.serializer_data import SerializerDataService
+from chat.types.serializer import SerializerFields
 from studai.celery import generate_questions
 from .serializers import ContentSerializer
 
@@ -36,14 +39,20 @@ class ChatViewSet(ViewSet):
     @action(detail=True, methods=["post"])
     def save_content(self, request: Request, pk=None):
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
-        data = ContentServices.validate_contents(request)
+
+        data_service = SerializerDataService()
+        data = data_service.get_serializer_data(
+            **self._get_content_fields(request=request)
+        )
+        validated_data = ContentValidator.validate_contents(data)
+
         service = ContentServices(
-            *self._get_services(data=data, chat=chat, user=request.user),
-            socket_id=data.get("socket_id"),
+            *self._get_services(data=validated_data, chat=chat, user=request.user),
+            socket_id=validated_data.get("socket_id"),
         )
         saved_contents = service.save()
+        
         serializer = ContentSerializer(saved_contents, many=True)
-
         return Response(serializer.data)
 
     @action(detail=True, methods=["get"])
@@ -70,3 +79,18 @@ class ChatViewSet(ViewSet):
                 text_content=data.get("text").get("text_content"), user=user, chat=chat
             ),
         )
+
+    def _get_content_fields(self, request: Request):
+        fields = {
+            "image": SerializerFields(
+                field=ImageField, data=request.data.getlist("image_content")
+            ),
+            "text": SerializerFields(
+                field=TextField, data=request.data.get("text_content")
+            ),
+            "socket_id": SerializerFields(
+                field=SocketIdField,
+                data=request.data.get("socket_id"),
+            ),
+        }
+        return fields

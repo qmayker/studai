@@ -18,9 +18,6 @@ class ContentSerializer(serializers.ModelSerializer):
         return obj.get_item_type()
 
 
-# TODO - remake serializers to one
-
-
 class TextSerializer(serializers.ModelSerializer):
     class Meta:
         model = TextItem

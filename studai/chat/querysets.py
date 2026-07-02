@@ -1,5 +1,5 @@
 from django.db.models import QuerySet
-from .types import Status
+from .types.db import Status
 
 
 class ImageItemQuerySet(QuerySet):
