@@ -6,6 +6,7 @@ from core.gemini import Gemini
 from core.redis import RedisService
 from core.socket import WebSocketServices
 from core.limiter import LimiterClient
+from core.redis_lock import QuestionGeneratingKwargs, DescriptionGeneratingKwargs
 from django.conf import settings
 from chat.types.db import Status
 
@@ -28,23 +29,23 @@ def generate_questions(chat_id: int, user_id: int):
     from chat.services.chat import ChatServices
 
     agent = Gemini.get_agent(logger=logger)
-    socket_service = WebSocketServices(chat_id=chat_id)
+    socket_service = WebSocketServices()
 
     chunks = agent.divide_into_chunks(
         "LLM models are large language models that can understand and generate human-like text based on the input they receive. They are trained on vast amounts of data and use deep learning techniques to learn patterns in language. LLMs can be used for various applications, such as chatbots, content generation, and language translation."
     )
     with Lock(
-        **redis_service.question_generating_kwargs(chat_id=chat_id, user_id=user_id)
+        redis_client=redis_service.redis,
+        **QuestionGeneratingKwargs.get_kwargs(chat_id, user_id),
     ):
-        logger.info(f"Chat {chat_id} User {user_id} started generating questions")
+        logger.info(f"{QuestionGeneratingKwargs.get_kwargs(chat_id, user_id)}")
         ChatServices.delete_chat_questions(chat_id=chat_id)
         agent.generate_tasks(chunks, chat_id=chat_id)
-        logger.info(f"Chat {chat_id} User {user_id} finished generating questions")
-        socket_service.send_callback()
+        socket_service.send_callback(chat_id=chat_id)
 
 
 @app.task()
-def generate_description(image_id: int, user_id: int, chat_id: int, lock_id: str):
+def generate_description(image_id: int, user_id: int):
     from chat.services.image_item import ImageDescriptionServices
 
     service = ImageDescriptionServices(
@@ -67,25 +68,21 @@ def generate_description(image_id: int, user_id: int, chat_id: int, lock_id: str
 @app.task()
 def send_description_callback(
     result: list[dict[int, dict]],
-    user_id: int,
+    lock_kwargs: dict,
     lock_id: str,
-    chat_id: int,
-    channel_id: str,
+    channel_id: str | None = None,
 ):
-    # TODO - add generate-button lock for user
     from chat.models import ImageItem
 
-    lock = Lock(
-        **redis_service.description_kwargs(user_id=user_id, chat_id=chat_id), id=lock_id
-    )
-    socket = WebSocketServices(chat_id=chat_id)
-    logger.info(f"Result {result}")
+    lock = Lock(redis_client=redis_service.redis, id=lock_id, **lock_kwargs)
+    socket = WebSocketServices()
     images = []
+    logger.info(f"Result {result}")
     for image_data in result:
         image_id, data = list(image_data.items())[0]
         if data["status"] == "failed":
             images.append(ImageItem(id=image_id, status=Status.FAILED))
-            socket.image_error(image_id=image_id)
+            socket.image_error(image_id=image_id, channel_id=channel_id)
             continue
         images.append(
             ImageItem(
@@ -107,8 +104,10 @@ def generate_descriptions(
 ):
     from chat.services.image_item import ImageDescriptionServices
 
-    lock = Lock(**redis_service.description_kwargs(user_id=user_id, chat_id=chat_id))
-    socket = WebSocketServices(chat_id=chat_id)
+    lock_kwargs = DescriptionGeneratingKwargs.get_kwargs(user_id, chat_id)
+    logger.info(f"{lock_kwargs}")
+    lock = Lock(redis_client=redis_service.redis, **lock_kwargs)
+    socket = WebSocketServices()
     if not lock.acquire(blocking=False):
         socket.button_locked(channel_id=channel_id)
         return
@@ -125,13 +124,13 @@ def generate_descriptions(
 
     workflow = chord(
         (
-            generate_description.s(
-                image_id=image_id, user_id=user_id, chat_id=chat_id, lock_id=lock.id
-            )
+            generate_description.s(image_id=image_id, user_id=user_id)
             for image_id in image_ids
         ),
         send_description_callback.s(
-            user_id=user_id, lock_id=lock.id, chat_id=chat_id, channel_id=channel_id
+            channel_id=channel_id,
+            lock_kwargs=lock_kwargs,
+            lock_id=lock.id,
         ),
     )
     workflow()

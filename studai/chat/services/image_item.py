@@ -1,10 +1,13 @@
 from django.db.models import QuerySet
+from celery import chord, current_app
 from time import sleep
 from logging import getLogger
 from pyrate_limiter import Limiter
 from chat.services.gemini import GeminiAgent
 from core.gemini import Gemini
 from chat.models import ImageItem
+from chat.models import ImageItem
+from chat.types.db import Status
 
 logger = getLogger(__name__)
 
@@ -54,3 +57,27 @@ class ImageDescriptionServices:
     @classmethod
     def get_pending(cls, user_id: int, chat_id: int) -> QuerySet[ImageItem]:
         return cls.model.objects.pending(user_id, chat_id)
+
+
+class ImageitemRestoreService:
+    def __init__(self): ...
+
+    @staticmethod
+    def get_queryset():
+        qs = ImageItem.objects.filter(status=Status.PROCESSING)
+        return qs
+
+    def restore(self, lock_kwargs: dict, lock_id: str):
+        from studai.celery import generate_description, send_description_callback
+
+        qs = self.get_queryset()
+        images = list(qs)
+        tasks = []
+        for image in images:
+            tasks.append(
+                generate_description.s(image_id=image.id, user_id=image.user_id)
+            )
+        qs.update(status=Status.PENDING)
+        chord(
+            tasks, send_description_callback.s(lock_kwargs=lock_kwargs, lock_id=lock_id)
+        )()

@@ -6,7 +6,6 @@ from django.contrib.auth.mixins import AccessMixin
 from django.contrib import messages
 from logging import getLogger
 from redis_lock import Lock
-from core.redis import RedisService
 from chat.models import Chat
 from quizess.services.test_attempt import TestAtemptServices
 from quizess.services.question_attempt import QuestionAttemptServices
@@ -43,7 +42,6 @@ class ChatQuestionView(AccessMixin, View):
         self.session = QuestionSessionServices(
             request.session, chat_rel_id=chat_related_id, logger=logger
         )
-        self.redis_client = RedisService()
         self.attempt_service = self._get_attempt_service(request=request)
         self.question_attempt_service = QuestionAttemptServices(
             attempt=self.attempt_service.attempt
