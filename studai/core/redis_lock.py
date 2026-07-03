@@ -17,7 +17,6 @@ class RedisLockKwargs(ABC):
     @classmethod
     def get_kwargs(cls, *args, **kwargs) -> str:
         name = cls.add_args(*args, name=cls.key())
-        logger.info(f"{args, kwargs, name}")
         return cls._get_kwargs(name=name, kwargs=kwargs)
 
     @staticmethod

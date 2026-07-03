@@ -1,4 +1,5 @@
 import os
+from django.conf import settings
 from celery import Celery, chord
 from celery.utils.log import get_task_logger
 from redis_lock import Lock
@@ -7,7 +8,6 @@ from core.redis import RedisService
 from core.socket import WebSocketServices
 from core.limiter import LimiterClient
 from core.redis_lock import QuestionGeneratingKwargs, DescriptionGeneratingKwargs
-from django.conf import settings
 from chat.types.db import Status
 
 
@@ -27,18 +27,18 @@ limiter_client = LimiterClient(redis_service.redis)
 @app.task()
 def generate_questions(chat_id: int, user_id: int):
     from chat.services.chat import ChatServices
+    from chat.services.content import ContentTextServices
 
     agent = Gemini.get_agent(logger=logger)
     socket_service = WebSocketServices()
-
-    chunks = agent.divide_into_chunks(
-        "LLM models are large language models that can understand and generate human-like text based on the input they receive. They are trained on vast amounts of data and use deep learning techniques to learn patterns in language. LLMs can be used for various applications, such as chatbots, content generation, and language translation."
-    )
+    text_service = ContentTextServices(user_id=user_id, chat_id=chat_id)
+    text = text_service.get_text()
+    logger.info(f"{text}")
+    chunks = agent.divide_into_chunks(text)
     with Lock(
         redis_client=redis_service.redis,
         **QuestionGeneratingKwargs.get_kwargs(chat_id, user_id),
     ):
-        logger.info(f"{QuestionGeneratingKwargs.get_kwargs(chat_id, user_id)}")
         ChatServices.delete_chat_questions(chat_id=chat_id)
         agent.generate_tasks(chunks, chat_id=chat_id)
         socket_service.send_callback(chat_id=chat_id)

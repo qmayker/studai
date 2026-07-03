@@ -60,6 +60,10 @@ class Content(models.Model):
     def get_item_type(self):
         return self.content_object.get_type()
 
+    @property
+    def text(self):
+        return self.content_object.text
+
 
 class ItemBase(models.Model):
     content = GenericRelation(Content, related_query_name="items")
@@ -68,6 +72,12 @@ class ItemBase(models.Model):
     def get_content(self): ...
 
     def get_type(self): ...
+
+    @property
+    def finished(self) -> bool: ...
+
+    @property
+    def text(self) -> str: ...
 
     class Meta:
         abstract = True
@@ -89,6 +99,14 @@ class TextItem(ItemBase):
 
     def get_type(self):
         return "text"
+
+    @property
+    def finished(self):
+        return True
+
+    @property
+    def text(self):
+        return self.text_content
 
 
 class ImageItem(ItemBase):
@@ -115,3 +133,11 @@ class ImageItem(ItemBase):
 
     def get_type(self):
         return "file"
+
+    @property
+    def finished(self):
+        return self.status == Status.FINISHED
+
+    @property
+    def text(self):
+        return self.description
