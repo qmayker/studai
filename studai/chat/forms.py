@@ -9,12 +9,14 @@ class TextContentForm(forms.ModelForm):
         fields = ["text_content"]
         widgets = {
             "text_content": forms.Textarea(
-                attrs={"rows": 3, "placeholder": "Type your text here..."}
+                attrs={
+                    "rows": 3,
+                    "placeholder": "Type your text here...",
+                }
             ),
         }
 
 
 class ImageContentForm(forms.Form):
     image_content = MultipleFileField()
-    template_name_div = 'chat/form/image_content.html'
-
+    template_name_div = "chat/form/image_content.html"

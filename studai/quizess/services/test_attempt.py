@@ -1,23 +1,25 @@
 from django.db.models import QuerySet
-from logging import Logger
+from logging import getLogger
 from chat.models import Chat
 from quizess.models import TestAtempt, QuestionAttempt
 
+logger = getLogger(__name__)
+
 
 class TestAtemptServices:
-    def __init__(self, attempt: TestAtempt, logger: Logger):
+    def __init__(self, attempt: TestAtempt):
         self.attempt = attempt
-        self.logger = logger
 
     @staticmethod
-    def create(chat: Chat, user, logger: Logger):
+    def create(chat: Chat, user):
         attempt = TestAtempt.objects.create(chat=chat, user=user)
-        return TestAtemptServices(attempt=attempt, logger=logger)
+        return TestAtemptServices(attempt=attempt)
 
     @staticmethod
-    def get(chat: Chat, user, id: int, logger: Logger) -> TestAtempt:
+    def get(chat: Chat, user, id: int):
         attempt = TestAtempt.objects.get(chat=chat, user=user, id=id)
-        return TestAtemptServices(attempt=attempt, logger=logger)
+        return TestAtemptServices(attempt=attempt)
 
-    def get_result(self, attempts: set[int]) -> QuerySet[QuestionAttempt]:
+    @staticmethod
+    def get_result(attempts: set[int]) -> QuerySet[QuestionAttempt]:
         return QuestionAttempt.objects.filter_by_ids(attempts)

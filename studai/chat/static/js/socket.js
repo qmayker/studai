@@ -34,6 +34,9 @@ export const socketPromise = new Promise((resolve) => {
                 btn_class.removeChild(btn_class.querySelector("p"));
                 btn.style.display = "block";
             }
+            else if (data["is_ready"] === true){
+                
+            }
         };
 
         chatSocket.onclose = function () {

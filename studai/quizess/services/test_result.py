@@ -1,5 +1,6 @@
 from django.db.models import QuerySet, F
-from quizess.models import TestResult, TestAtempt, QuestionAttempt
+from django.urls import reverse
+from quizess.models import TestResult, QuestionAttempt
 from .answer import AnswerServices
 
 
@@ -9,8 +10,8 @@ class TestResultServices:
         self.answer_service = AnswerServices(result=self.result)
 
     @staticmethod
-    def create(attempt: TestAtempt, user):
-        result = TestResult.objects.create(attempt=attempt, user=user)
+    def create(attempt_id: int, user):
+        result = TestResult.objects.create(attempt_id=attempt_id, user=user)
         return TestResultServices(result=result)
 
     @staticmethod
@@ -39,3 +40,7 @@ class TestResultServices:
             question_text=F("question__question_text"),
             correct_answer_letter=F("question__correct_answer_letter"),
         )
+
+    @property
+    def result_url(self) -> str:
+        return reverse("quizess:detail", args=[self.result.id])

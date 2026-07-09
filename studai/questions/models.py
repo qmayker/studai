@@ -18,7 +18,7 @@ class Question(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     @property
-    def question_obj(self):
+    def service(self):
         return QuestionServices(
             options=self.options,
             question_name=self.question_text,

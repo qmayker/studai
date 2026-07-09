@@ -24,6 +24,7 @@ urlpatterns = [
     path("chats/", include("chat.urls", namespace="chat")),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path("api/", include("chat.api.urls", namespace="chat_api")),
+    path("api/", include("questions.api.urls", namespace="questions_api")),
     path("questions/", include("questions.urls", namespace="questions")),
     path("quizess/", include("quizess.urls", namespace="quizess")),
 ]

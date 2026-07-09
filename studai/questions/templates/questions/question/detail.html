@@ -11,21 +11,16 @@
 
     <div class="question-container"> 
         <form method="post">{% csrf_token %} 
-            {{form.as_p}}
-            {{end}}
-            <input type="hidden" value="{{attempt_id}}" name="attempt_id">
-            {% if end %}
-                <div id="endButton" >
-                    <input type="hidden" value="True" name="end">
-                    <button type="submit">Finish test</button> 
-                    
-                </div>
-            {% else %}
-                <div id="answerButton">
-                    <input type="hidden" value="False" name="end">
+            <div class="answers">
+                {{form.as_p}}
+            </div>         
+            <div id="answerButton" data-url="{% url 'questions_api:answer' %}" data-id="{{chat_related_id}}">         
+                {% if end %}
+                    <button type="submit">Finish test</button>     
+                {% else %}
                     <button type="submit">Next</button>  
-                </div>
-            {% endif %}
+                {% endif %}      
+            </div>
             </form>
                 
             
@@ -33,9 +28,9 @@
 {% endblock content %}
 
 
-{% block script %}
-    <script src="{% static 'js/answerButton.js' %}"></script>
-{% endblock script %}
+{% block scripts %}
+    <script src="{% static 'js/questions.js' %}"></script>
+{% endblock scripts %}
     
     
     

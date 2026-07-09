@@ -1,14 +1,18 @@
-from logging import Logger
+from logging import getLogger
 from django.forms import Form, ChoiceField, RadioSelect, BooleanField, HiddenInput
 from .services.question import QuestionServices
 
+logger = getLogger(__name__)
+
 
 class AnswerForm(Form):
-    answer = ChoiceField(widget=RadioSelect)
-    end = BooleanField(widget=HiddenInput, required=False)
+    answer = ChoiceField(widget=RadioSelect, required=True)
 
     def __init__(
-        self, *args, logger: Logger, question_service: QuestionServices = None, **kwargs
+        self,
+        *args,
+        question_service: QuestionServices,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         answer_field = self.fields["answer"]

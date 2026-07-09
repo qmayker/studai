@@ -31,7 +31,7 @@ class QuestionAttempt(models.Model):
     objects = QuestionAttemptQueryset.as_manager()
 
     @property
-    def question_obj(self):
+    def service(self) -> QuestionServices:
         return QuestionServices(
             options=self.options,
             question_name=self.question_text,
@@ -39,8 +39,12 @@ class QuestionAttempt(models.Model):
         )
 
     @property
-    def correct(self):
+    def correct(self) -> bool:
         return self.answer == self.correct_answer_letter
+
+    @property
+    def chat_related_id(self) -> int:
+        return self.attempt.chat.related_id
 
 
 class TestResult(models.Model):
