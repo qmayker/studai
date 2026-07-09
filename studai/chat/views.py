@@ -2,7 +2,6 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
-from django.forms.formsets import formset_factory
 from logging import getLogger
 from .models import Chat
 from .forms import TextContentForm, ImageContentForm

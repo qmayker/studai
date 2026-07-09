@@ -6,6 +6,7 @@ from django.db.models import QuerySet
 from logging import getLogger
 from quizess.services.quizz import QuizzServices
 from quizess.services.question_attempt import QuestionAttemptServices
+from quizess.models import TestAtempt
 from questions.services.question import QuestionServices
 from questions.forms import AnswerForm
 from chat.models import Chat
@@ -19,24 +20,30 @@ class AnswerView(APIView):
     authentication_classes = [SessionAuthentication]
     serializer = AnswerSerializer
 
-    def get_queryset(self):
-        return Chat.objects.filter(user=self.request.user)
+    def get_owned_queryset(self, model):
+        return model.objects.filter(user=self.request.user)
 
-    def serialize_answer(self, data, qs: QuerySet) -> dict:
-        answer_serializer = AnswerSerializer(data=data, qs=qs)
+    def serialize_answer(self, data, chat_qs: QuerySet, attempt_qs: QuerySet) -> dict:
+        answer_serializer = AnswerSerializer(
+            data=data, chat_qs=chat_qs, attempt_qs=attempt_qs
+        )
         answer_serializer.is_valid(raise_exception=True)
         return answer_serializer.validated_data
 
     def post(self, request: Request, format=None):
         validated_data = self.serialize_answer(
-            data=request.POST, qs=self.get_queryset()
+            data=request.POST,
+            chat_qs=self.get_owned_queryset(model=Chat),
+            attempt_qs=self.get_owned_queryset(model=TestAtempt),
         )
         chat: Chat = validated_data["chat"]
-        questions = chat.questions.all()
+        attempt: TestAtempt = validated_data["attempt"]
         answer: str = validated_data["answer"]
 
         session = QuestionSessionServices(
-            session=self.request.session, chat_rel_id=chat.related_id
+            session=self.request.session,
+            chat_rel_id=chat.related_id,
+            attempt_id=attempt.id,
         )
         quizz_service = QuizzServices(session=session)
         question_attempt_service = QuestionAttemptServices(attemp_id=session.attempt_id)
@@ -51,14 +58,14 @@ class AnswerView(APIView):
             return self._redirect(url=result_service.result_url)
         session.next_page()
         res = quizz_service.get(
-            qs=questions,
+            qs=chat.questions.all(),
             question_attempt_service=question_attempt_service,
             user=request.user,
         )
         if res.end:
             return self._redirect(url=res.result)
         service: QuestionServices = res.result
-        form = AnswerForm(question_service=service)
+        form = AnswerForm(question_service=service, attempt_id=attempt.id)
         return Response({"form": form.as_p()})
 
     @staticmethod

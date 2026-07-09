@@ -8,8 +8,9 @@ logger = getLogger(__name__)
 class QuestionSessionServices:
     NAMESPACE = "question"
 
-    def __init__(self, session: SessionBase, chat_rel_id: int):
+    def __init__(self, session: SessionBase, chat_rel_id: int, attempt_id: int):
         self.chat_rel_id = str(chat_rel_id)
+        self.attempt_id = attempt_id
         self._session = session
         session_data = self.get_session()
 
@@ -21,7 +22,7 @@ class QuestionSessionServices:
 
     @property
     def chat_namespace(self):
-        return f"chat_{self.chat_rel_id}"
+        return f"chat_{self.chat_rel_id}_{self.attempt_id}"
 
     @property
     def active(self):
@@ -53,9 +54,9 @@ class QuestionSessionServices:
     def attempt_ids(self) -> tuple[str]:
         return tuple(self._ids.values())
 
-    @property
-    def attempt_id(self) -> int:
-        return self.chat_session["attempt_id"]
+    # @property
+    # def attempt_id(self) -> int:
+    #     return self.chat_session["attempt_id"]
 
     @property
     def current_question_attempt_id(self) -> int | None:
@@ -83,12 +84,12 @@ class QuestionSessionServices:
         self.chat_session = None
         return chat_data
 
-    def start(self, questions: list[int], attempt_id: int):
+    def start(self, questions: list[int]):
         self.chat_session = self._create(
             session=self.session, namespace=self.chat_namespace
         )
         self.set_question_related(questions=questions)
-        self.set_attempt_related(attempt_id=attempt_id)
+        # self.set_attempt_related(attempt_id=attempt_id)
 
     @modifying
     def _save_ids(self, chat: dict, questions: list[int]):
@@ -109,8 +110,8 @@ class QuestionSessionServices:
     def delete_id(self, question_id: int):
         self._ids.pop(question_id)
 
-    def set_attempt_related(self, attempt_id: int):
-        self._set_attempt_id(attempt_id=attempt_id)
+    # def set_attempt_related(self, attempt_id: int):
+    #     self._set_attempt_id(attempt_id=attempt_id)
 
     def set_question_related(self, questions: list[int]):
         self._save_ids(chat=self.chat_session, questions=questions)

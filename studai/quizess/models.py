@@ -6,8 +6,6 @@ from core.fields import RelatedIDField
 
 # Create your models here.
 
-# TODO related_id, names
-
 
 class TestAtempt(models.Model):
     user = models.ForeignKey(

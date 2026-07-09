@@ -1,3 +1,4 @@
+from uuid import UUID
 from django.db.models import QuerySet
 from logging import getLogger
 from chat.models import Chat

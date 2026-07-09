@@ -4,6 +4,7 @@ from django.views.generic import View
 from django.contrib.auth.mixins import AccessMixin
 from django.forms import Form
 from logging import getLogger
+from uuid import uuid4
 from chat.models import Chat
 from quizess.services.test_attempt import TestAtemptServices
 from quizess.services.question_attempt import QuestionAttemptServices
@@ -23,8 +24,8 @@ class ChatQuestionView(AccessMixin, View):
     template = "questions/question/detail.html"
     end_template = "quizess/test/detail.html"
 
-    def get_form(self, service: QuestionServices, **kwargs):
-        return AnswerForm(question_service=service, **kwargs)
+    def get_form(self, service: QuestionServices, attempt_id: int, **kwargs):
+        return AnswerForm(question_service=service, attempt_id=attempt_id, **kwargs)
 
     def get_chat(self, chat_related_id: int):
         return Chat.objects.get(related_id=chat_related_id, user=self.request.user)
@@ -37,22 +38,24 @@ class ChatQuestionView(AccessMixin, View):
         self.chat = self.get_chat(chat_related_id=chat_related_id)
         self.questions = self.chat.questions.all()
 
+        self.attempt_service = self.get_attempt_service(request=request, chat=self.chat)
+        self.attempt_id = self.attempt_service.attempt.id
+        self.question_attempt_service = QuestionAttemptServices(
+            attemp_id=self.attempt_id
+        )
+
         self.session = QuestionSessionServices(
-            session=request.session, chat_rel_id=chat_related_id
+            session=request.session,
+            chat_rel_id=chat_related_id,
+            attempt_id=self.attempt_id,
         )
         self.quizz_service = QuizzServices(session=self.session)
-
-        self.attempt_service = self.get_attempt_service(request=request, chat=self.chat)
-        self.question_attempt_service = QuestionAttemptServices(
-            attemp_id=self.attempt_service.attempt.id,
-        )
 
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request: HttpRequest, chat_related_id: int):
-        self.quizz_service.check_session(
-            qs=self.questions, attempt_id=self.attempt_service.attempt.id
-        )
+        logger.info(f"{self.session._session.items()}")
+        self.quizz_service.check_session(qs=self.questions)
 
         result = self.quizz_service.get(
             qs=self.questions,
@@ -63,7 +66,7 @@ class ChatQuestionView(AccessMixin, View):
             return self.render_end_response(result.result)
         service: QuestionServices = result.result
 
-        form = self.get_form(service=service)
+        form = self.get_form(service=service, attempt_id=self.attempt_id)
         return self.render_response(
             form=form, service=service, chat_related_id=chat_related_id
         )
@@ -87,13 +90,6 @@ class ChatQuestionView(AccessMixin, View):
     def get_attempt_service(
         self, request: HttpRequest, chat: Chat
     ) -> TestAtemptServices:
-        """Get or create TestAttemptServices"""
-        if request.method == "GET" and not self.session.active:
-            attempt = TestAtemptServices.create(chat=chat, user=request.user)
-        else:
-            attempt = TestAtemptServices.get(
-                chat=self.chat,
-                user=request.user,
-                id=self.session.attempt_id,
-            )
+        """Create TestAttemptServices"""
+        attempt = TestAtemptServices.create(chat=chat, user=request.user)
         return attempt

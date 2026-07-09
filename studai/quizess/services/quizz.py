@@ -22,13 +22,13 @@ class QuizzServices:
             return self.get_question(qs=qs, question_id=self.session.current_id)
         return question
 
-    def start_session(self, attempt_id: int, qs):
+    def start_session(self, qs):
         ids = QuestionServices.get_random_question_ids(qs=qs)
-        self.session.start(questions=ids, attempt_id=attempt_id)
+        self.session.start(questions=ids)
 
-    def check_session(self, qs, attempt_id: int):
+    def check_session(self, qs):
         if not self.session.active:
-            self.start_session(qs=qs, attempt_id=attempt_id)
+            self.start_session(qs=qs)
 
     @atomic
     def save_quizz_result(self, user) -> TestResultServices:
