@@ -15,6 +15,7 @@ class TestAtempt(models.Model):
         "chat.Chat", on_delete=models.CASCADE, related_name="attempts"
     )
     related_id = RelatedIDField()
+    order = models.PositiveIntegerField(default=0)
 
 
 class QuestionAttempt(models.Model):
@@ -26,7 +27,11 @@ class QuestionAttempt(models.Model):
     correct_answer_letter = models.CharField(max_length=1)
     created = models.DateTimeField(auto_now_add=True)
     answer = models.CharField(max_length=1, null=True)
+    order = models.PositiveIntegerField()
     objects = QuestionAttemptQueryset.as_manager()
+
+    class Meta:
+        ordering = ["order"]
 
     @property
     def service(self) -> QuestionServices:

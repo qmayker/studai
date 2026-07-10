@@ -4,7 +4,6 @@ from django.views.generic import View
 from django.contrib.auth.mixins import AccessMixin
 from django.forms import Form
 from logging import getLogger
-from uuid import uuid4
 from chat.models import Chat
 from quizess.services.test_attempt import TestAtemptServices
 from quizess.services.question_attempt import QuestionAttemptServices
@@ -39,33 +38,25 @@ class ChatQuestionView(AccessMixin, View):
         self.questions = self.chat.questions.all()
 
         self.attempt_service = self.get_attempt_service(request=request, chat=self.chat)
-        self.attempt_id = self.attempt_service.attempt.id
+        self.attempt_id = self.attempt_service.id
         self.question_attempt_service = QuestionAttemptServices(
             attemp_id=self.attempt_id
         )
 
-        self.session = QuestionSessionServices(
-            session=request.session,
-            chat_rel_id=chat_related_id,
-            attempt_id=self.attempt_id,
+        self.quizz_service = QuizzServices(
+            qa_service=self.question_attempt_service
         )
-        self.quizz_service = QuizzServices(session=self.session)
 
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request: HttpRequest, chat_related_id: int):
-        logger.info(f"{self.session._session.items()}")
-        self.quizz_service.check_session(qs=self.questions)
-
-        result = self.quizz_service.get(
-            qs=self.questions,
-            user=request.user,
-            question_attempt_service=self.question_attempt_service,
-        )
+        self.quizz_service.start(qs=self.questions)
+        result = self.quizz_service.get(user=request.user, order_id=0)
         if result.end:
             return self.render_end_response(result.result)
+        self.attempt_service.next_order()
+        
         service: QuestionServices = result.result
-
         form = self.get_form(service=service, attempt_id=self.attempt_id)
         return self.render_response(
             form=form, service=service, chat_related_id=chat_related_id
@@ -91,5 +82,5 @@ class ChatQuestionView(AccessMixin, View):
         self, request: HttpRequest, chat: Chat
     ) -> TestAtemptServices:
         """Create TestAttemptServices"""
-        attempt = TestAtemptServices.create(chat=chat, user=request.user)
-        return attempt
+        self.attempt = TestAtemptServices.create(chat=chat, user=request.user)
+        return TestAtemptServices(attempt_id=self.attempt.id)

@@ -43,9 +43,13 @@ class QuestionServices:
         return question_ids
 
     @staticmethod
+    def shuffle_questions(questions: list):
+        random.shuffle(questions)
+        return questions
+
+    @staticmethod
     def get_question(qs: QuerySet, pk: int):
         return qs.get(pk=pk)
-
 
     def __str__(self):
         return self.question_name

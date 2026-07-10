@@ -5,6 +5,7 @@ from rest_framework.authentication import SessionAuthentication
 from django.db.models import QuerySet
 from logging import getLogger
 from quizess.services.quizz import QuizzServices
+from quizess.services.test_attempt import TestAtemptServices
 from quizess.services.question_attempt import QuestionAttemptServices
 from quizess.models import TestAtempt
 from questions.services.question import QuestionServices
@@ -36,34 +37,22 @@ class AnswerView(APIView):
             chat_qs=self.get_owned_queryset(model=Chat),
             attempt_qs=self.get_owned_queryset(model=TestAtempt),
         )
-        chat: Chat = validated_data["chat"]
         attempt: TestAtempt = validated_data["attempt"]
         answer: str = validated_data["answer"]
-
-        session = QuestionSessionServices(
-            session=self.request.session,
-            chat_rel_id=chat.related_id,
-            attempt_id=attempt.id,
-        )
-        quizz_service = QuizzServices(session=session)
-        question_attempt_service = QuestionAttemptServices(attemp_id=session.attempt_id)
-
+        logger.info(f"Order {attempt.order}")
+        test_attempt_service = TestAtemptServices(attempt_id=attempt.id)
+        question_attempt_service = QuestionAttemptServices(attemp_id=attempt.id)
+        quizz_service = QuizzServices(qa_service=question_attempt_service)
         question_attempt_service.set_answer(
             qs=question_attempt_service.get_queryset(),
-            id=session.current_question_attempt_id,
+            order=attempt.order-1,
             answer=answer,
         )
-        if session.last_id:
-            result_service = quizz_service.save_quizz_result(user=request.user)
-            return self._redirect(url=result_service.result_url)
-        session.next_page()
-        res = quizz_service.get(
-            qs=chat.questions.all(),
-            question_attempt_service=question_attempt_service,
-            user=request.user,
-        )
+        res = quizz_service.get(user=request.user, order_id=attempt.order)
+        logger.info(f"{res.end}")
         if res.end:
             return self._redirect(url=res.result)
+        test_attempt_service.next_order()
         service: QuestionServices = res.result
         form = AnswerForm(question_service=service, attempt_id=attempt.id)
         return Response({"form": form.as_p()})

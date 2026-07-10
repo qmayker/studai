@@ -84,6 +84,13 @@ class QuestionSessionServices:
         self.chat_session = None
         return chat_data
 
+    @modifying
+    def global_clear(self):
+        session = self._session.pop(self.NAMESPACE)
+        self.session = None
+        self.chat_session = None
+        return session
+
     def start(self, questions: list[int]):
         self.chat_session = self._create(
             session=self.session, namespace=self.chat_namespace
