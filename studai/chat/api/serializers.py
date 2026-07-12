@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.fields import SerializerMethodField
 from chat.models import Content, TextItem, ImageItem
+from websocket.models import UserSocket
 
 
 class ContentSerializer(serializers.ModelSerializer):
@@ -33,7 +34,7 @@ class ImageSerializer(serializers.ModelSerializer):
 class ContentsSerializer(serializers.Serializer):
     text = TextSerializer()
     image = ImageSerializer(many=True)
-    socket_id = serializers.CharField()
+    socket = serializers.PrimaryKeyRelatedField(queryset=UserSocket.objects.none())
 
     def validate(self, data):
         if not data.get("text").get("text_content") and not data.get("image"):
@@ -41,3 +42,9 @@ class ContentsSerializer(serializers.Serializer):
                 "Either text_content or image_content must be provided."
             )
         return data
+
+    def __init__(self, *args, socket_queryset=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if socket_queryset is not None:
+            self.fields["socket"].queryset = socket_queryset

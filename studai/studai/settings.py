@@ -41,11 +41,14 @@ INSTALLED_APPS = [
     "chat.apps.ChatConfig",
     "questions.apps.QuestionsConfig",
     "quizess.apps.QuizessConfig",
+    "websocket.apps.WebsocketConfig",
     "rest_framework",
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -160,4 +163,15 @@ LOGGING = {
         "handlers": ["console"],
         "level": "INFO",
     },
+}
+
+
+# Toolbar
+def show_toolbar(request):
+    return DEBUG
+
+
+INTERNAL_IPS = ["127.0.0.1", "localhost"]
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": show_toolbar,
 }

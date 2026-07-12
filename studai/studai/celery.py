@@ -5,7 +5,7 @@ from celery.utils.log import get_task_logger
 from redis_lock import Lock
 from core.gemini import Gemini
 from core.redis import RedisService
-from core.socket import WebSocketServices
+from websocket.socket import WebSocketServices
 from core.limiter import LimiterClient
 from core.redis_lock import QuestionGeneratingKwargs, DescriptionGeneratingKwargs
 from chat.types.db import Status

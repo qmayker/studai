@@ -1,5 +1,5 @@
 from functools import wraps
-from chat.types.socket import ChannelMessage
+from websocket.types.socket import ChannelMessage
 
 
 def modifying(func):

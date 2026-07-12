@@ -35,8 +35,8 @@ class ContentServices:
 
 class ContentValidator:
     @staticmethod
-    def validate_contents(data: dict):
-        serializer = ContentsSerializer(data=data)
+    def validate_contents(data: dict, **kwargs):
+        serializer = ContentsSerializer(data=data, **kwargs)
         serializer.is_valid(raise_exception=True)
         return serializer.validated_data
 

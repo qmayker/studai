@@ -14,8 +14,9 @@ from chat.services.contents import (
 )
 from chat.services.content import ContentServices, ContentValidator
 from chat.services.serializer_fields import SocketIdField, TextField, ImageField
-from chat.services.serializer_data import SerializerDataService
+from chat.services.serializer_data import SerializerDataServices
 from chat.types.serializer import SerializerFields
+from websocket.models import UserSocket
 from studai.celery import generate_questions
 from .serializers import ContentSerializer
 
@@ -40,18 +41,20 @@ class ChatViewSet(ViewSet):
     def save_content(self, request: Request, pk=None):
         chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
 
-        data_service = SerializerDataService()
-        data = data_service.get_serializer_data(
+        data = SerializerDataServices.get_serializer_data(
             **self._get_content_fields(request=request)
         )
-        validated_data = ContentValidator.validate_contents(data)
+        validated_data = ContentValidator.validate_contents(
+            data, socket_queryset=UserSocket.objects.filter(user=self.request.user)
+        )
+        socket: UserSocket = validated_data.get("socket")
 
         service = ContentServices(
             *self._get_services(data=validated_data, chat=chat, user=request.user),
-            socket_id=validated_data.get("socket_id"),
+            socket_id=socket.socket_id,
         )
         saved_contents = service.save()
-        
+
         serializer = ContentSerializer(saved_contents, many=True)
         return Response(serializer.data)
 

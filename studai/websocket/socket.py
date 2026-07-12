@@ -1,15 +1,18 @@
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from chat.types.socket import ChannelMessage
+from .types.socket import ChannelMessage
 from core.decorators import channel_send
+
+
+class SocketGroupServices:
+    @staticmethod
+    def group_name(chat_id: int) -> str:
+        return f"chat_{chat_id}"
 
 
 class WebSocketServices:
     def __init__(self):
         self.layer = get_channel_layer()
-
-    def group_name(self, chat_id: int) -> str:
-        return f"chat_{chat_id}"
 
     def send_callback(self, chat_id: int):
         group_name = self.group_name(chat_id=chat_id)

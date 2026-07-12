@@ -2,8 +2,9 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
+from django.contrib.contenttypes.prefetch import GenericPrefetch
 from logging import getLogger
-from .models import Chat
+from .models import Chat, TextItem, ImageItem
 from .forms import TextContentForm, ImageContentForm
 
 # Create your views here.
@@ -48,7 +49,11 @@ class ChatDetailView(LoginRequiredMixin, RelatedIDChatViewMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["contents"] = self.object.contents.all()
+        context["contents"] = self.object.contents.all().prefetch_related(
+            GenericPrefetch(
+                "content_object", [TextItem.objects.all(), ImageItem.objects.all()]
+            ),
+        )
         context["form"] = self._get_text_form()
         context["image_form"] = self._get_image_form()
         return context

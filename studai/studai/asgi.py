@@ -18,7 +18,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "studai.settings")
 
 django_asgi_app = get_asgi_application()
 
-from chat.websocket.routing import websocket_urlpatterns  # noqa: E402
+from websocket.routing import websocket_urlpatterns  # noqa: E402
 
 application = ProtocolTypeRouter(
     {

@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const textContent = textArea.value;
         const images = getImages()
         textArea.value = "";
+        console.log('test');
         if(!textContent.trim() && !images.length){
             alert("Enter a message or upload an image")
             return

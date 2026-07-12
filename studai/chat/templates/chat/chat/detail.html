@@ -4,7 +4,7 @@
 {% block title %}Chat Detail{% endblock title %}
 
 {% block content %}
-    <div class="chat-detail" id="{{object.id}}">
+    <div class="chat-detail" id="{{object.id}}" data-user_id="{{request.user.id}}">
         <h2>{{object.chat_name}}</h2>
     </div>
     <div class="chat-materials">

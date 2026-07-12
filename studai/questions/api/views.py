@@ -39,7 +39,6 @@ class AnswerView(APIView):
         )
         attempt: TestAtempt = validated_data["attempt"]
         answer: str = validated_data["answer"]
-        logger.info(f"Order {attempt.order}")
         test_attempt_service = TestAtemptServices(attempt_id=attempt.id)
         question_attempt_service = QuestionAttemptServices(attemp_id=attempt.id)
         quizz_service = QuizzServices(qa_service=question_attempt_service)
@@ -49,7 +48,6 @@ class AnswerView(APIView):
             answer=answer,
         )
         res = quizz_service.get(user=request.user, order_id=attempt.order)
-        logger.info(f"{res.end}")
         if res.end:
             return self._redirect(url=res.result)
         test_attempt_service.next_order()
