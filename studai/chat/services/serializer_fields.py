@@ -17,7 +17,7 @@ class SerializerField[TI, TO](ABC):
 class SocketIdField(SerializerField[str, str]):
     @staticmethod
     def get_data(data):
-        return data
+        return {"socket": data}
 
 
 class TextField(SerializerField[str, dict[str, str]]):

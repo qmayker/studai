@@ -2,6 +2,9 @@ from rest_framework import serializers
 from rest_framework.fields import SerializerMethodField
 from chat.models import Content, TextItem, ImageItem
 from websocket.models import UserSocket
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class ContentSerializer(serializers.ModelSerializer):
@@ -31,10 +34,27 @@ class ImageSerializer(serializers.ModelSerializer):
         fields = ["image_content"]
 
 
+class SocketSerializer(serializers.Serializer):
+    socket = serializers.PrimaryKeyRelatedField(queryset=UserSocket.objects.none())
+
+    def __init__(self, instance=None, data=..., **kwargs):
+        super().__init__(instance, data, **kwargs)
+        self._get_context()
+
+    def bind(self, field_name, parent):
+        super().bind(field_name, parent)
+        self._get_context()
+
+    def _get_context(self):
+        qs = self.context.get("socket_queryset")
+        if qs is not None:
+            self.fields["socket"].queryset = qs
+
+
 class ContentsSerializer(serializers.Serializer):
     text = TextSerializer()
     image = ImageSerializer(many=True)
-    socket = serializers.PrimaryKeyRelatedField(queryset=UserSocket.objects.none())
+    socket = SocketSerializer()
 
     def validate(self, data):
         if not data.get("text").get("text_content") and not data.get("image"):
@@ -42,9 +62,3 @@ class ContentsSerializer(serializers.Serializer):
                 "Either text_content or image_content must be provided."
             )
         return data
-
-    def __init__(self, *args, socket_queryset=None, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        if socket_queryset is not None:
-            self.fields["socket"].queryset = socket_queryset

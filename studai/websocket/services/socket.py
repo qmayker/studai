@@ -1,6 +1,6 @@
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .types.socket import ChannelMessage
+from ..types.socket import ChannelMessage
 from core.decorators import channel_send
 
 
@@ -11,35 +11,34 @@ class SocketGroupServices:
 
 
 class WebSocketServices:
-    def __init__(self):
+    def __init__(self, channel_id: str):
         self.layer = get_channel_layer()
-
-    def send_callback(self, chat_id: int):
-        group_name = self.group_name(chat_id=chat_id)
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            group_name, {"type": "chat.message", "is_ready": True}
-        )
+        self.channel_id = channel_id
 
     @channel_send()
-    def button_locked(self, channel_id: str) -> ChannelMessage:
+    def send_callback(self, url: str):
+        message = {"type": "chat.message", "is-ready": True, "redirect-url": url}
+        return ChannelMessage(channel_id=self.channel_id, message=message)
+
+    @channel_send()
+    def button_locked(self) -> ChannelMessage:
         message = {"type": "chat.message", "button-locked": True}
-        return ChannelMessage(channel_id=channel_id, message=message)
+        return ChannelMessage(channel_id=self.channel_id, message=message)
 
     @channel_send()
-    def button_running(self, channel_id: str) -> ChannelMessage:
+    def button_running(self) -> ChannelMessage:
         message = {"type": "chat.message", "button-locked": False}
-        return ChannelMessage(channel_id=channel_id, message=message)
+        return ChannelMessage(channel_id=self.channel_id, message=message)
 
     @channel_send()
-    def button_finished(self, channel_id: str) -> ChannelMessage:
+    def button_finished(self) -> ChannelMessage:
         message = {"type": "chat.message", "button-finished": True}
-        return ChannelMessage(channel_id=channel_id, message=message)
+        return ChannelMessage(channel_id=self.channel_id, message=message)
 
     @channel_send()
-    def image_error(self, image_id: int, channel_id: str) -> ChannelMessage:
+    def image_error(self, image_id: int) -> ChannelMessage:
         message = {"type": "chat.message", "error": str(image_id)}
-        return ChannelMessage(channel_id=channel_id, message=message)
+        return ChannelMessage(channel_id=self.channel_id, message=message)
 
     def _send_to_channel(self, channel_message: ChannelMessage):
         if not channel_message.channel_id:

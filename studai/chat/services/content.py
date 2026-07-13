@@ -67,6 +67,5 @@ class ContentTextServices:
                 continue
             text_content = content.content_object.text
             content_texts.append(text_content)
-            logger.info(f"{text_content}")
 
         return " ".join(content_texts)

@@ -47,7 +47,7 @@ class ImageContentServices(BasicContentService):
 
     @atomic
     def save_content(self, batch_id: uuid.UUID) -> list[Content]:
-        from studai.celery import generate_descriptions
+        from chat.tasks.description import generate_descriptions
 
         images = [
             self.model(**image, user=self.user, description=None, chat=self.chat)

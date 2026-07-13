@@ -2,7 +2,7 @@ import json
 import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import UserSocket
-from .socket import SocketGroupServices
+from .services.socket import SocketGroupServices
 
 logger = logging.getLogger(__name__)
 

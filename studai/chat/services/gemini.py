@@ -1,10 +1,10 @@
 import asyncio
 import json
+from logging import getLogger
 from collections.abc import Generator
 from time import sleep
 from google import genai
 from google.genai import types
-from logging import Logger
 from decouple import config
 from core.types import Questions, Question, answers_serializer
 
@@ -46,6 +46,8 @@ FAKE_RESPONSE = {
         },
     ]
 }
+
+logger = getLogger(__name__)
 
 
 class GeminiConfig:
@@ -90,23 +92,18 @@ class GeminiConfig:
         )
 
     @classmethod
-    def get_image_config(self):
-        return {"type": "text", "text": self.IMAGE_INSTRUCTION}
+    def get_image_config(cls):
+        return {"type": "text", "text": cls.IMAGE_INSTRUCTION}
 
 
 class GeminiAgent:
     CHUNKS_SIZE = 1000
 
-    def __init__(
-        self, config: types.GenerateContentConfig, image_config: dict, logger: Logger
-    ):
+    def __init__(self, config: types.GenerateContentConfig, image_config: dict):
         self.config = config
         self.image_config = image_config
-        self.logger = logger
         self.client = self.get_client()
         self.model = "gemini-3.5-flash"
-        if logger:
-            self.logger.debug(f"Initialized GeminiAgent with config: {self.config}")
 
     @staticmethod
     def get_client():

@@ -37,8 +37,8 @@ export const socketPromise = new Promise((resolve) => {
                 btnClass.removeChild(btnClass.querySelector("p"));
                 btn.style.display = "block";
             }
-            else if (data["is_ready"] === true){
-                
+            else if (data['is-ready'] === true){
+                window.location = data['redirect-url']
             }
         };
 

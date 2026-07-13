@@ -1,9 +1,10 @@
 from django.db.models import QuerySet
-from celery import chord, current_app
+from celery import chord
 from time import sleep
 from logging import getLogger
 from pyrate_limiter import Limiter
 from chat.services.gemini import GeminiAgent
+from chat.tasks.description import send_description_callback, generate_description
 from core.gemini import Gemini
 from chat.models import ImageItem
 from chat.models import ImageItem
@@ -68,8 +69,6 @@ class ImageitemRestoreService:
         return qs
 
     def restore(self, lock_kwargs: dict, lock_id: str):
-        from studai.celery import generate_description, send_description_callback
-
         qs = self.get_queryset()
         images = list(qs)
         tasks = []

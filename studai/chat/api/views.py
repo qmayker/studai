@@ -16,9 +16,9 @@ from chat.services.content import ContentServices, ContentValidator
 from chat.services.serializer_fields import SocketIdField, TextField, ImageField
 from chat.services.serializer_data import SerializerDataServices
 from chat.types.serializer import SerializerFields
+from chat.tasks.questions import generate_questions
 from websocket.models import UserSocket
-from studai.celery import generate_questions
-from .serializers import ContentSerializer
+from .serializers import ContentSerializer, SocketSerializer
 
 
 logger = logging.getLogger(__name__)
@@ -32,22 +32,22 @@ class ChatViewSet(ViewSet):
         queryset = Chat.objects.filter(user=user)
         return queryset
 
-    def check_permission(self, pk: str | int, user):
-        qs = self.get_queryset(user).filter(pk=pk)
-        if not qs.exists():
-            raise PermissionDenied()
+    def get_chat(self, pk: str | int):
+        qs = self.get_queryset(self.request.user)
+        return get_object_or_404(queryset=qs, pk=pk)
 
     @action(detail=True, methods=["post"])
     def save_content(self, request: Request, pk=None):
-        chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
+        chat = self.get_chat()
 
         data = SerializerDataServices.get_serializer_data(
             **self._get_content_fields(request=request)
         )
         validated_data = ContentValidator.validate_contents(
-            data, socket_queryset=UserSocket.objects.filter(user=self.request.user)
+            data,
+            context={"socket_queryset": UserSocket.objects.filter(user=request.user)},
         )
-        socket: UserSocket = validated_data.get("socket")
+        socket: UserSocket = validated_data.get("socket").get("socket")
 
         service = ContentServices(
             *self._get_services(data=validated_data, chat=chat, user=request.user),
@@ -58,15 +58,24 @@ class ChatViewSet(ViewSet):
         serializer = ContentSerializer(saved_contents, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["get"])
+    @action(detail=True, methods=["post"])
     def generate_questions(self, request: Request, pk=None):
-        self.check_permission(pk, request.user)
-        generate_questions.delay(pk, request.user.id)
+        chat = self.get_chat(pk=pk)
+        data = SocketIdField.get_data(data=request.POST.get("socket_id"))
+        serializer = SocketSerializer(
+            data=data,
+            context={"socket_queryset": UserSocket.objects.filter(user=request.user)},
+        )
+        serializer.is_valid()
+        serializer.is_valid(raise_exception=True)
+        socket: UserSocket = serializer.validated_data["socket"]
+
+        generate_questions.delay(pk, request.user.id, socket.socket_id, chat.related_id)
         return Response({"status": "ok"})
 
     @action(detail=True, methods=["get"])
     def get_contents(self, request: Request, pk=None):
-        chat = get_object_or_404(self.get_queryset(request.user), pk=pk)
+        chat = self.get_chat(pk=pk)
         serializer = ContentSerializer(chat.contents.all(), many=True)
         return Response(serializer.data)
 
@@ -91,7 +100,7 @@ class ChatViewSet(ViewSet):
             "text": SerializerFields(
                 field=TextField, data=request.data.get("text_content")
             ),
-            "socket_id": SerializerFields(
+            "socket": SerializerFields(
                 field=SocketIdField,
                 data=request.data.get("socket_id"),
             ),
